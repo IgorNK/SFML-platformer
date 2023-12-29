@@ -7,9 +7,7 @@ class Scene_Play : public Scene {
     Entity * m_player = nullptr;
     PlayerConfig m_playerConfig {PlayerConfig()};
 public:
-    Scene_Play(GameEngine* game)
-        : Scene(game) 
-    { }
+    Scene_Play(GameEngine* game, const std::string & level_path);
     ~Scene_Play() {}
 
     void init();

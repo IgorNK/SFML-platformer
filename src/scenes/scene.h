@@ -23,5 +23,6 @@ public:
 
     void simulate(int);
     void doAction(const Action & action);
-    void registerAction(const Action & action);
+    void registerAction(const int key_code, const std::string & action_name);
+    const std::map<int, std::string> & getActionMap() const;
 };

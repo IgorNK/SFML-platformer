@@ -1,12 +1,24 @@
 #include "scene_play.h"
 #include <iostream>
 
+Scene_Play::Scene_Play(GameEngine* game, const std::string & level_path)
+    : Scene(game)
+    , m_levelPath(level_path)
+{ 
+    init();
+}
+
+void Scene_Play::init() {
+	std::cout << "We're in play\n";
+
+}
+
 void Scene_Play::update() {
     sDebug();
 }
 
 void Scene_Play::sDoAction(const Action & action) {
-
+    
 }
 
 void Scene_Play::sRender() {
@@ -14,7 +26,6 @@ void Scene_Play::sRender() {
     if (m_sRender) {
         // m_window.draw(shape);
     }
-
 }
 
 void Scene_Play::sDebug() {

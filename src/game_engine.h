@@ -62,11 +62,11 @@ class GameEngine {
     size_t m_frameCount{0};
 
     // State booleans
+
+public:
     bool m_running{true};
     bool m_paused{false};
     bool m_sGUI{true};
-
-public:
     int m_game_close_timeout{100};
     int m_game_close_countdown{0};
 
@@ -76,6 +76,7 @@ public:
     void init(const std::string &configfile);
     Assets & getAssets();
     sf::RenderWindow & getWindow();
+    bool changeScene(const std::string & scene_name, const std::shared_ptr<Scene> scene);
     bool changeScene(const std::string & scene_name);
     void shutdown();
     void run();

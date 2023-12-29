@@ -1,6 +1,7 @@
 #include "../game_engine.h"
 #include <SFML/Window/Event.hpp>
 #include <iostream>
+#include "../scenes/scene.h"
 
 void GameEngine::sUserInput() {
     sf::Event event;
@@ -9,6 +10,17 @@ void GameEngine::sUserInput() {
         ImGui::SFML::ProcessEvent(event);
         if (event.type == sf::Event::Closed) {
             m_running = false;
+        }
+
+        if (event.type == sf::Event::KeyPressed || event.type == sf::Event::KeyReleased) {
+
+            if (m_currentScene->getActionMap().find(event.key.code) == m_currentScene->getActionMap().end()) {
+                continue;
+            }
+
+            const std::string actionType = (event.type == sf::Event::KeyPressed) ? "START" : "END";
+
+            m_currentScene->doAction(Action(m_currentScene->getActionMap().at(event.key.code), actionType));
         }
 
         if (event.type == sf::Event::KeyPressed) {
@@ -21,14 +33,14 @@ void GameEngine::sUserInput() {
                     m_paused = !m_paused;
                     break;
                 }
-                case sf::Keyboard::Escape: {
-                    if (m_game_close_countdown > 0) {
-                        m_running = false; 
-                    } else {
-                        m_game_close_countdown = m_game_close_timeout;
-                    }
-                    break;
-                }
+                // case sf::Keyboard::Escape: {
+                //     if (m_game_close_countdown > 0) {
+                //         m_running = false; 
+                //     } else {
+                //         m_game_close_countdown = m_game_close_timeout;
+                //     }
+                //     break;
+                // }
             }
         }
 

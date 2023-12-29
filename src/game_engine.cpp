@@ -72,7 +72,7 @@ void GameEngine::init(const std::string &configfile) {
 	create_window(width, height, "ImGUI + SFML = <3", depth, framerate, fullscreen);
 
 	m_scenes["MENU"] = std::make_shared<Scene_Menu>(this);
-	m_scenes["PLAY"] = std::make_shared<Scene_Play>(this);
+	// m_scenes["PLAY"] = std::make_shared<Scene_Play>(this, "");
 	changeScene("MENU");
 }
 
@@ -107,6 +107,13 @@ void GameEngine::shutdown() {
 	ImGui::SFML::Shutdown();
 }
 
+bool GameEngine::changeScene(const std::string & scene_name, const std::shared_ptr<Scene> scene) {
+	m_scenes[scene_name] = scene;
+	m_currentSceneName = scene_name;
+	m_currentScene = m_scenes[scene_name];
+	return true;
+}
+
 bool GameEngine::changeScene(const std::string & scene_name) {
 	if (m_scenes.find(scene_name) == m_scenes.end()) {
 		std::cerr << "No scene named " << scene_name << std::endl;
@@ -116,6 +123,7 @@ bool GameEngine::changeScene(const std::string & scene_name) {
 	m_currentScene = m_scenes[scene_name];
 	return true;
 }
+
 sf::RenderWindow & GameEngine::getWindow() {
 	return m_window;
 }
