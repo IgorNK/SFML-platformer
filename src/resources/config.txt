@@ -5,13 +5,6 @@ Window [
 	refreshRate=60,
 	width=1920,
 ],
-Font [
-	blue=255,
-	green=255,
-	path=resources/ShareTech-Regular.ttf,
-	red=255,
-	size=24,
-],
 Global [
 	gameCloseTimeout=100,
 ],

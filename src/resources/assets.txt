@@ -1,0 +1,16 @@
+Font [
+  name="ShareTech-Regular",
+  blue=255,
+	green=255,
+	path=resources/ShareTech-Regular.ttf,
+	red=255,
+	size=24,
+],
+Font [
+  name="ThaleahFat",
+  red=255,
+  green=255,
+  blue=255,
+  size=32,
+  path=resources/ThaleahFat.ttf
+]
