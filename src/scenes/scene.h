@@ -1,6 +1,7 @@
 #pragma once
 #include "../game_engine.h"
 #include "../action.h"
+#include <SFML/Graphics/View.hpp>
 
 class Scene {
 protected:
