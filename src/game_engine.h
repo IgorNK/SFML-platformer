@@ -51,13 +51,13 @@ class GameEngine {
     );
 
     // Private member variables
+    sf::RenderWindow m_window{sf::RenderWindow()};
     std::map<std::string, std::shared_ptr<Scene>> m_scenes;
     std::shared_ptr<Scene> m_currentScene;
     Assets m_assets {};
     std::string m_currentSceneName {};
     sf::Clock m_delta_clock{sf::Clock()};
     Config m_config;
-    sf::RenderWindow m_window{sf::RenderWindow()};
     std::string m_userconfig_file;
     size_t m_frameCount{0};
 

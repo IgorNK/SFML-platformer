@@ -10,19 +10,45 @@ Scene_Menu::Scene_Menu(GameEngine* game)
 }
 
 void Scene_Menu::init() {
+    m_menuStrings = {
+        "resources/level1.lvl",
+        "resources/level2.lvl"
+    };
+    
     registerAction(sf::Keyboard::W, "UP");
     registerAction(sf::Keyboard::S, "DOWN");
     registerAction(sf::Keyboard::D, "PLAY");
     registerAction(sf::Keyboard::Escape, "QUIT");
 
-    m_menuStrings = {
-        "resources/level1.lvl",
-        "resources/level2.lvl"
+    if (!m_font.loadFromFile("resources/ThaleahFat.ttf")) {
+        std::cerr << "Failed to load font resources/ThaleahFat.ttf \n";
+        return;
+    }
+
+    for (int i = 0; i < m_menuStrings.size(); ++i) {
+        const std::string & item = m_menuStrings[i];
+        sf::Text text;
+        text.setFont(m_font);
+        text.setString(item);
+        text.setCharacterSize(48);
+        text.setFillColor(sf::Color::Black);
+        text.setStyle(sf::Text::Bold);
+        text.setPosition(100, 150 + 60 * i);
+        m_menuItems.push_back(text);
     };
+
+    m_menuTitle = sf::Text("CHOOSE LEVEL", m_font, 72);
+    m_menuTitle.setFillColor(sf::Color::Black);
+    m_menuTitle.setPosition(20, 20);
+    m_menuHint = sf::Text("UP:W DOWN:S PLAY:D   BACK:ESC", m_font, 24);
+    m_menuHint.setFillColor(sf::Color::Black);
+    m_menuHint.setPosition(20, 600);
+
+
+    m_initialized = true;
 }
 
 void Scene_Menu::update() {
-    sDebug();
 }
 
 void Scene_Menu::sDoAction(const Action & action) {
@@ -48,9 +74,24 @@ void Scene_Menu::sDoAction(const Action & action) {
 
 void Scene_Menu::sRender() {
     sf::RenderWindow & window = m_game->getWindow();
-    if (m_sRender) {
-        // m_window.draw(shape);
+    window.clear(sf::Color(60, 180, 255));
+    if (m_initialized && m_sRender) {
+        for (int i = 0; i < m_menuItems.size(); ++i) {
+            sf::Text & text = m_menuItems[i];
+            if (i == m_selectedMenuIndex) {
+                text.setFillColor(sf::Color::White);
+                text.setStyle(sf::Text::Bold | sf::Text::Underlined);
+            } else {
+                text.setFillColor(sf::Color::Black);
+                text.setStyle(sf::Text::Bold);
+            }
+            window.draw(text);
+        }
+        window.draw(m_menuTitle);
+        window.draw(m_menuHint);
     }
+    sDebug();
+
 
 }
 

@@ -9,7 +9,7 @@ Scene_Play::Scene_Play(GameEngine* game, const std::string & level_path)
 }
 
 void Scene_Play::init() {
-	std::cout << "We're in play\n";
+	std::cout << "Loading " << m_levelPath << '\n';
 
 }
 
