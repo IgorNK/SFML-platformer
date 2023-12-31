@@ -1,20 +1,14 @@
 #pragma once
-#include <SFML/Graphics/Texture.hpp>
-#include <SFML/Graphics/Sprite.hpp>
 #include <vector>
 #include <fstream>
 #include <iostream>
-#include "static_collider.h"
 #include "animated_sprite.h"
+#include "tileset.h"
 
 class Level {
-    sf::Texture m_texture;
-    Vec2 m_size_tiles;
-    Vec2 m_size_pixels;
-    Vec2 m_tile_size;
-    std::vector<sf::Sprite> m_tiles;
-    std::vector<int> m_tile_IDs;
-    std::vector<StaticCollider> m_colliders;
+    Vec2 m_dimensions;
+    Tileset m_tileset;
+    std::vector<int> m_tiles;
 
   void parse_tokens(const std::vector<std::string> &tokenstream) {
     bool nextHeading = true;
@@ -26,13 +20,11 @@ class Level {
       if (nextHeading) {
         nextHeading = false;
         heading = token;
-        std::cout << "Heading: " << heading << "\n";
         continue;
       }
 
       if (token.find(']') != std::string::npos) {
         nextHeading = true;
-        std::cout << "next heading\n";
         continue;
       }
 
@@ -60,38 +52,40 @@ class Level {
         size_t pos= 0;
         while ((pos = value.find(',')) != std::string::npos) {
             const int int_val = std::stoi(value.substr(0, pos));
-            std::cout << int_val << ',';
-            m_tile_IDs.push_back(int_val);
+            m_tiles.push_back(int_val);
             value.erase(0, pos + 1);
         }
         if (!value.empty()) {
             const int int_val = std::stoi(value.substr(0, pos));
-            std::cout << int_val << ',' << std::endl;
-            m_tile_IDs.push_back(int_val);
+            m_tiles.push_back(int_val);
         }
       }
       if (heading == "Level" && key == "size") {
         std::string::size_type delim = value.find(',', 0);
         const int x_val = std::stoi(value.substr(0, delim));
         const int y_val = std::stoi(value.substr(delim + 1, value.size()));
-        std::cout << "size: " << x_val << ":" << y_val << '\n';
+        m_dimensions.x = x_val;
+        m_dimensions.y = y_val;
       }
       if (heading == "Tileset") {
-        if (key == "tileWidth") {
-          m_tile_size.x = std::stoi(value);
-        }
-        if (key == "tileHeight") {
-          m_tile_size.y = std::stoi(value);
+        if (key == "name") {
+          m_tileset.name = value;
+        } else if (key == "texturePath") {
+          m_tileset.texturePath = value;
+        } else if (key == "tileWidth") {
+          m_tileset.tileWidth = std::stoi(value);
+        } else if (key == "tileHeight") {
+          m_tileset.tileHeight = std::stoi(value);
+        } else if (key == "width") {
+          m_tileset.width = std::stoi(value);
+        } else if (key == "height") {
+          m_tileset.height = std::stoi(value);
         }
       }
-    }
-
-    for (int i = 0; i < m_tile_IDs.size(); ++i) {
-        std::cout << m_tile_IDs[i] << std::endl;
     }
   }
 
-  void read_file(const std::string &filename) {
+  int read_file(const std::string &filename) {
     // May throw, should be enclosed in try / catch expression
     std::vector<std::string> tokenstream{};
     std::string word;
@@ -104,12 +98,44 @@ class Level {
       tokenstream.push_back(word);
     }
 
-    return parse_tokens(tokenstream);
+    try {
+      parse_tokens(tokenstream);
+    } catch (const std::invalid_argument &ia) {
+      std::cerr << "Invalid argument: " << ia.what() << std::endl;
+      return -1;
+    }
+
+    catch (const std::out_of_range &oor) {
+      std::cerr << "Out of Range error: " << oor.what() << std::endl;
+      return -2;
+    }
+
+    catch (const std::exception &e) {
+      std::cerr << "Undefined error: " << e.what() << std::endl;
+      return -3;
+    }
+    return 0;
   }
 
 
 public:
-    void load_file(const std::string & filename) {
-        read_file(filename);
+    bool load_file(const std::string & filename) {
+        if (read_file(filename) != 0) {
+          std::cerr << "Failed to read level file " << filename << std::endl;
+          return false;
+        }
+        return true;
+    }
+
+    const Vec2 & getDimensions() const {
+      return m_dimensions;
+    }
+
+    const Tileset & getTileset() const {
+      return m_tileset;
+    }
+
+    const std::vector<int> & getTiles() const {
+      return m_tiles;
     }
 };

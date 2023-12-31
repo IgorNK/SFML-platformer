@@ -55,7 +55,7 @@ public:
 
   void load_assets(const std::string &filename) {
     AssetData data = read_file(filename);
-    test_data(data);
+    // test_data(data);
   }
 
 private:

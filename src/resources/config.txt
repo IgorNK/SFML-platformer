@@ -1,9 +1,9 @@
 Window [
 	depth=32,
 	fullscreen=0,
-	height=1080,
+	height=600,
 	refreshRate=60,
-	width=1920,
+	width=800,
 ],
 Global [
 	gameCloseTimeout=100,

@@ -2,6 +2,8 @@
 #include "../play/scene_play.h"
 #include <SFML/Window/Event.hpp>
 #include <iostream>
+#include <imgui.h>
+#include <imgui-SFML.h>
 
 Scene_Menu::Scene_Menu(GameEngine* game)
     : Scene(game) 
@@ -42,7 +44,7 @@ void Scene_Menu::init() {
     m_menuTitle.setPosition(20, 20);
     m_menuHint = sf::Text("UP:W DOWN:S PLAY:D   BACK:ESC", m_font, 24);
     m_menuHint.setFillColor(sf::Color::Black);
-    m_menuHint.setPosition(20, 600);
+    m_menuHint.setPosition(20, m_game->getWindow().getSize().y - 50);
 
 
     m_initialized = true;

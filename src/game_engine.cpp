@@ -1,7 +1,7 @@
 #include "game_engine.h"
 #include "scenes/menu/scene_menu.h"
-#include "scenes/play/scene_play.h"
-#include <iostream>
+#include <imgui.h>
+#include <imgui-SFML.h>
 
 void GameEngine::run() {
 

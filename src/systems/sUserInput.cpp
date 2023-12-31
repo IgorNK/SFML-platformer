@@ -1,13 +1,14 @@
 #include "../game_engine.h"
 #include <SFML/Window/Event.hpp>
-#include <iostream>
 #include "../scenes/scene.h"
+#include <imgui.h>
+#include <imgui-SFML.h>
 
 void GameEngine::sUserInput() {
     sf::Event event;
 
     while (m_window.pollEvent(event)) {
-        ImGui::SFML::ProcessEvent(event);
+        ImGui::SFML::ProcessEvent(m_window, event);
         if (event.type == sf::Event::Closed) {
             m_running = false;
         }

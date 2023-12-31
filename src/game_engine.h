@@ -1,13 +1,8 @@
 #pragma once
-#include <map>
-#include <string>
-#include <SFML/Graphics/RenderWindow.hpp>
-#include <SFML/Graphics/Font.hpp>
-#include <SFML/System/Clock.hpp>
-#include "entity_manager.h"
-#include <imgui-SFML.h>
-#include <imgui.h>
+#include "SFML/Graphics/RenderWindow.hpp"
 #include "assets.h"
+#include "entity_manager.h"
+#include <string>
 
 class Scene;
 
@@ -51,7 +46,7 @@ class GameEngine {
     );
 
     // Private member variables
-    sf::RenderWindow m_window{sf::RenderWindow()};
+    sf::RenderWindow m_window;
     std::map<std::string, std::shared_ptr<Scene>> m_scenes;
     std::shared_ptr<Scene> m_currentScene;
     Assets m_assets {};

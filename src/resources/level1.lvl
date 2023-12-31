@@ -1,13 +1,13 @@
 Tileset [
     name=TreasureHunters,
-    texture=resource/TerrainAtlas.png,
+    texturePath=resources/TerrainAtlas.png,
     tileWidth=32,
     tileHeight=32,
     width=544,
     height=160,
 ],
 Level [
-    size=30,20,
+    size=30,15,
     tiles=19,19,19,19,19,19,19,19,7,36,36,36,36,36,36,8,19,19,19,19,19,19,19,19,19,19,19,19,19,19,
         19,19,19,19,19,7,36,36,37,0,0,0,0,0,0,35,8,19,19,19,19,19,19,19,19,19,19,19,19,19,
         19,19,19,19,19,20,0,0,0,0,0,0,0,0,0,0,18,19,19,19,19,19,19,19,19,19,19,19,19,19,
