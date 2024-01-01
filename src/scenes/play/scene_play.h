@@ -1,39 +1,42 @@
 #pragma once
-#include "../scene.h"
-#include "../../player_config.h"
-#include "../../level.h"
-#include "../../tilemap.h"
 #include "../../debug_cell.h"
+#include "../../level.h"
+#include "../../player_config.h"
+#include "../../tilemap.h"
+#include "../scene.h"
 
 class Scene_Play : public Scene {
-    std::string m_levelPath {""};
-    sf::Font m_font;
-    std::shared_ptr<Entity> m_player = nullptr;
-    PlayerConfig m_playerConfig {PlayerConfig()};
-    Vec2 m_grid_size;
-    Vec2 m_size_pixels;
-    std::vector<DebugCell> m_debug_grid;
-    sf::View m_view;
-    Level m_level;
-    TileMap m_tilemap;
+  std::string m_levelPath{""};
+  sf::Font m_font;
+  std::shared_ptr<Entity> m_player = nullptr;
+  PlayerConfig m_playerConfig{PlayerConfig()};
+  Vec2 m_grid_size;
+  Vec2 m_size_pixels;
+  std::vector<DebugCell> m_debug_grid;
+  sf::View m_view;
+  Level m_level;
+  TileMap m_tilemap;
+  size_t m_frameCount;
 
-    bool m_sDebugGrid {true};
+  bool m_sDebugGrid{false};
+  bool m_sRenderMap{true};
+
 public:
-    Scene_Play(GameEngine* game, const std::string & level_path);
-    ~Scene_Play() {}
+  Scene_Play(GameEngine *game, const std::string &level_path);
+  ~Scene_Play() {}
 
-    void init();
-    void update();
-    void onEnd();
-    void spawn_player(const Vec2 & position);
-    void spawn_entities(const Level & level);
+  void init();
+  void update();
+  void onEnd();
+  void spawn_player(const Vec2 &position);
+  void spawn_entities(const Level &level);
 
-    // Systems
-    void sAnimation();
-    void sMovement();
-    void sRender();
-    void sDoAction(const Action & action);
-    void sDebug();
-    std::vector<DebugCell> spawn_grid(const Vec2 & size, const Vec2 & grid_size);
-    void sCollision();
+  // Systems
+  void sAnimation();
+  void sMovement();
+  void sRender();
+  void sDoAction(const Action &action);
+  void sDebug();
+  std::vector<DebugCell> spawn_grid(const Vec2 &size, const Vec2 &grid_size);
+  void sCollision();
 };

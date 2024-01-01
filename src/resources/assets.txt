@@ -14,3 +14,11 @@ Font [
   size=32,
   path=resources/ThaleahFat.ttf
 ]
+Texture [
+  name="VirtualGuy.png",
+  path=resources/VirtualGuy.png
+]
+Texture [
+  name="TerrainAtlas.png"
+  path=resources/TerrainAtlas.png
+]

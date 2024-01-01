@@ -1,7 +1,7 @@
 #include "game_engine.h"
 #include "scenes/menu/scene_menu.h"
-#include <imgui.h>
 #include <imgui-SFML.h>
+#include <imgui.h>
 
 void GameEngine::run() {
 
@@ -62,10 +62,10 @@ void GameEngine::init(const std::string &configfile) {
   try {
     m_assets.load_assets(assets_file);
   } catch (std::exception &e) {
-    throw std::runtime_error(
-        std::string(e.what(), sizeof(e.what())) +
-        " | Could not read configuration file: " + assets_file);
+    throw std::runtime_error(std::string(e.what(), sizeof(e.what())) +
+                             " | Could not read assets file: " + assets_file);
   }
+  m_assets.test_assets();
   // const std::string font_path = read_config_s("Font", "path");
   // m_font = sf::Font();
   // if (!m_font.loadFromFile(font_path)) {
@@ -147,3 +147,5 @@ void GameEngine::sDebug() {
     ImGui::End();
   }
 }
+
+Assets &GameEngine::getAssets() { return m_assets; }

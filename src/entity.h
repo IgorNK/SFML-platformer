@@ -1,62 +1,45 @@
 #pragma once
-#include <vector>
-#include <map>
-#include <memory>
 #include "component.h"
 #include "tag.h"
+#include <map>
+#include <memory>
 #include <tuple>
+#include <vector>
 
-typedef std::tuple<
-	CTransform,
-	CBoundingBox
-	> Components;
+typedef std::tuple<CTransform, CBoundingBox, CAnimatedSprite> Components;
 
 class Entity {
-	friend class EntityManager;
-	const size_t m_id = 0;
-	const Tag m_tag;
-	Components m_components;
-	bool m_is_alive = true;
+  friend class EntityManager;
+  const size_t m_id = 0;
+  const Tag m_tag;
+  Components m_components{};
+  bool m_is_alive = true;
+
 public:
-	
-	Entity(const Tag tag, const size_t id) : m_tag(tag), m_id(id) {}
-	
-	const size_t id() {
-		return m_id;
-	}
+  Entity(const Tag tag, const size_t id) : m_tag(tag), m_id(id) {}
 
-	Tag tag() {
-		return m_tag;
-	}
+  const size_t id() { return m_id; }
 
-	template <typename T>
-	T & getComponent() {
-		return std::get<T>(m_components);
-	}
+  Tag tag() { return m_tag; }
 
-	template <typename T>
-	const T & getComponent() const {
-		return std::get<T>(m_components);
-	}
+  template <typename T> T &getComponent() { return std::get<T>(m_components); }
 
-	template <typename T>
-	bool hasComponent() const {
-		return getComponent<T>().has;
-	}
+  template <typename T> const T &getComponent() const {
+    return std::get<T>(m_components);
+  }
 
-	template <typename T, typename... TArgs>
-	T & addComponent(TArgs&&... mArgs) {
-		auto & component = getComponent<T>();
-		component = T(std::forward<TArgs>(mArgs)...);
-		component.has = true;
-		return component;
-	}
+  template <typename T> bool hasComponent() const {
+    return getComponent<T>().has;
+  }
 
-	void destroy() {
-		m_is_alive = false;
-	}
+  template <typename T, typename... TArgs> T &addComponent(TArgs &&...mArgs) {
+    auto &component = getComponent<T>();
+    component = T(std::forward<TArgs>(mArgs)...);
+    component.has = true;
+    return component;
+  }
 
-	bool is_alive() {
-		return m_is_alive;
-	}
+  void destroy() { m_is_alive = false; }
+
+  bool is_alive() { return m_is_alive; }
 };
