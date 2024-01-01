@@ -1,4 +1,5 @@
 #pragma once
+#include "animated_sprite.h"
 #include "vec2.h"
 
 class Component {
@@ -13,12 +14,25 @@ public:
     Vec2 scale = {1.f, 1.f};
     Vec2 velocity = {0.f, 0.f};
     float angle = 0;
-    CTransform(){};
-    ~CTransform(){};
+    CTransform(){}
+    CTransform(const Vec2 & in_pos)
+        : pos(in_pos)
+    {}
+    ~CTransform(){}
 };
 
 class CBoundingBox : public Component {
 public:
     CBoundingBox(){}
     ~CBoundingBox(){}
+};
+
+class CAnimatedSprite : public Component {
+public:
+    AnimatedSprite sprite;
+    CAnimatedSprite(){}
+    CAnimatedSprite(const AnimatedSprite & in_sprite)
+        : sprite(in_sprite)
+    {}
+    ~CAnimatedSprite(){}
 };

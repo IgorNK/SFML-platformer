@@ -26,6 +26,7 @@ public:
     void update();
     void onEnd();
     void spawn_player(const Vec2 & position);
+    void spawn_entities(const Level & level);
 
     // Systems
     void sAnimation();

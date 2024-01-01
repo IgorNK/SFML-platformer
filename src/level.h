@@ -2,18 +2,30 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 #include "animated_sprite.h"
 #include "tileset.h"
+
+struct EntityData {
+  int id;
+  std::string name;
+  std::string type;
+  int x;
+  int y;
+};
 
 class Level {
     Vec2 m_dimensions;
     Tileset m_tileset;
     std::vector<int> m_tiles;
+    std::vector<EntityData> m_entities;
 
   void parse_tokens(const std::vector<std::string> &tokenstream) {
     bool nextHeading = true;
     std::string heading = "";
     std::string key, value;
+    EntityData new_entity;
+    bool first_entity = true;
     for (std::string token : tokenstream) {
 
       std::string::size_type begin = token.find_first_not_of(" ,[\f\t\v");
@@ -32,20 +44,20 @@ class Level {
       if (begin == std::string::npos) {
         continue;
       }
-
+      
       // Extract the key value
       std::string::size_type end = token.find('=', begin);
       if (end != std::string::npos) {
         key = token.substr(begin, end - begin);
         // (No leading or trailing whitespace allowed)
-        key.erase(key.find_last_not_of(" ,]\f\t\v") + 1);
+        key.erase(key.find_last_not_of(" ,]\"\f\t\v") + 1);
       }
 
       // Extract the value (no leading or trailing whitespace allowed)
-      begin = token.find_first_not_of(" ,]\f\n\r\t\v", end + 1);
-      end = token.find_last_not_of(" ,]\f\n\r\t\v") + 1;
+      begin = token.find_first_not_of(" ,]\"\f\n\r\t\v", end + 1);
+      end = token.find_last_not_of(" ,]\"\f\n\r\t\v") + 1;
       value = token.substr(begin, end - begin);
-      value.erase(value.find_last_not_of(" ,]\f\t\v") + 1);
+      value.erase(value.find_last_not_of(" ,]\"\f\t\v") + 1);
       
       // No blank keys allowed
       if (heading == "Level" && key == "tiles") {
@@ -82,7 +94,44 @@ class Level {
           m_tileset.height = std::stoi(value);
         }
       }
+      if (heading == "Entities") {
+        if (key == "id") {
+          // std::cout << "key: " << key << ", value: " << value << std::endl;
+          int id = std::stoi(value);
+          if (auto e = std::find_if(m_entities.begin(), m_entities.end(),
+          [&](EntityData ent){ return ent.id == id; }); e == m_entities.end()) {
+            // this is a new id
+            if (first_entity) {
+              // std::cout << "This entity is first. Skip pushing to array." << std::endl;
+              first_entity = false;
+            } else {
+              // std::cout << "Id " << id << " is a new id. Pushing created entity into array." << std::endl;
+              m_entities.push_back(new_entity);
+            }
+            new_entity = {};
+            new_entity.id = id;
+            continue;
+          } else {
+            // std::cout << "This id already exists, for some reason." << std::endl;
+            continue;
+          }
+        } else if (key == "name") {
+          // std::cout << "Name: " << value << std::endl;
+          new_entity.name = value;
+        } else if (key == "type") {
+          // std::cout << "Type: " << value << std::endl;
+          new_entity.type = value;
+        } else if (key == "x") {
+          // std::cout << "x: " << value << std::endl;
+          new_entity.x = std::stoi(value);
+        } else if (key == "y") {
+          // std::cout << "y: " << value << std::endl;
+          new_entity.y = std::stoi(value);
+        }
+      }
     }
+    // std::cout << "Pushing in last entity." << std::endl;
+    m_entities.push_back(new_entity);
   }
 
   int read_file(const std::string &filename) {
@@ -127,6 +176,17 @@ public:
         return true;
     }
 
+    void test_data() {
+      std::cout << "Testing entities in m_entities:" << std::endl;
+      for (EntityData & entity : m_entities) {
+        std::cout << "id: " << entity.id << std::endl;
+        std::cout << "name: " << entity.name << std::endl;
+        std::cout << "type: " << entity.type << std::endl;
+        std::cout << "x: " << entity.x << std::endl;
+        std::cout << "y: " << entity.y << std::endl;
+      }
+    }
+
     const Vec2 & getDimensions() const {
       return m_dimensions;
     }
@@ -137,5 +197,9 @@ public:
 
     const std::vector<int> & getTiles() const {
       return m_tiles;
+    }
+
+    const std::vector<EntityData> & getEntities() const {
+      return m_entities;
     }
 };

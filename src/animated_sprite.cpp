@@ -3,13 +3,74 @@
 #include <iostream>
 #include <sstream>
 
+AnimatedSprite::AnimatedSprite()
+    : m_currentFrame (0) 
+{
+
+}
+
+AnimatedSprite::~AnimatedSprite() {
+    m_currentFrames = nullptr;
+}
+
 void AnimatedSprite::update() {
-    
+    if (m_paused) {
+        return;
+    }
+    if (!m_currentFrames) {
+        std::cerr << "AnimatedSprite: currentFrames for " << m_currentAnimation << " not set." << std::endl;
+    }
+    ++m_currentFrame;
+    m_sprite.setTextureRect(m_currentFrames->at(m_currentFrame));
+    if (m_currentFrame >= m_frameCount - 1) {
+        if (m_repeat) {
+            m_currentFrame = 0;
+        } else {
+            onEnd();
+        }
+    }
+}
+
+void AnimatedSprite::onEnd() {
+    pause();
+    m_hasEnded = true;
+}
+
+const std::vector<std::string> AnimatedSprite::getAnimationNames() {
+    std::vector<std::string> names;
+    for (const auto & [name, value] : m_animations) {
+        names.push_back(name);
+    }
+    return names;
+}
+
+bool AnimatedSprite::play(const std::string & anim_name) {
+    if (m_animations.find(anim_name) == m_animations.end()) {
+        std::cerr << "No animation [" << anim_name << "] on AnimatedSprite." << std::endl;
+        return false;
+    }
+    m_currentAnimation = anim_name;
+    m_currentFrames = &m_animations[anim_name];
+    m_frameCount = m_animations[anim_name].size();
+    const sf::IntRect clipRect = m_currentFrames->at(0);
+    m_sprite.setOrigin({
+        (float)clipRect.width / 2,
+        (float)clipRect.height / 2
+    });
+    m_paused = true;
+    return true;
+}
+
+void AnimatedSprite::pause() {
+    m_paused = true;
 }
 
 bool AnimatedSprite::hasEnded() {
-    std::vector<sf::IntRect> & frames = m_animations[m_currentAnimation];
-    return m_currentFrame >= frames.size() - 1;
+    return m_hasEnded;
+}
+
+void AnimatedSprite::setRepeat(bool repeat) {
+    m_repeat = repeat;
 }
 
 bool AnimatedSprite::load_file(const std::string & path) {
@@ -53,7 +114,6 @@ bool AnimatedSprite::load_file(const std::string & path) {
     m_imageSize.y = image_height;
 
     std::string::size_type repeat_s = repeat.find(':', 0);
-    m_repeat = repeat.substr(repeat_s, repeat.size() - repeat_s);
     
     std::string line = "";
     std::string heading = "";

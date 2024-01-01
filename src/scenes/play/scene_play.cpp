@@ -1,4 +1,5 @@
 #include "scene_play.h"
+#include "component.h"
 #include <iostream>
 #include <imgui.h>
 #include <imgui-SFML.h>
@@ -47,6 +48,27 @@ void Scene_Play::init() {
     m_debug_grid = spawn_grid(m_size_pixels, m_grid_size);
 }
 
+void Scene_Play::spawn_entities(const Level & level) {
+    for (const EntityData & e_data : level.getEntities()) {
+        if (e_data.type != "EntitySpawn") {
+            continue;
+        }
+        if (e_data.name == "PlayerStart") {
+            spawn_player({(float)e_data.x, (float)e_data.y});
+        }
+    }
+}
+
+void Scene_Play::spawn_player(const Vec2 & position) {
+    m_player = m_entities.add_entity(Tag::Player);
+    m_player->addComponent<CTransform>(position);
+    AnimatedSprite p_sprite;
+    p_sprite.load_file("resources/VirtualGuy.atlas");
+    p_sprite.setRepeat(true);
+    p_sprite.play("Idle");
+    m_player->addComponent<CAnimatedSprite>(p_sprite);
+}
+
 void Scene_Play::onEnd() {
     m_game->getWindow().setView(m_game->getWindow().getDefaultView());
 }
@@ -63,11 +85,17 @@ void Scene_Play::sRender() {
     sf::RenderWindow & window = m_game->getWindow();
     if (m_sRender) {
         // m_window.draw(shape);
+        for (const auto & entity : m_entities.get_entities()) {
+            if (entity->hasComponent<CAnimatedSprite>()) {
+                auto sprite = entity->getComponent<CAnimatedSprite>();
+                window.draw(sprite.sprite);
+            }
+        }
         window.draw(m_tilemap);
     }
     if (m_sDebugGrid) {
         for (const DebugCell & cell : m_debug_grid) {
-            m_game->getWindow().draw(cell);
+            window.draw(cell);
         }
     }
 }
