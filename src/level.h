@@ -6,6 +6,14 @@
 #include "animated_sprite.h"
 #include "tileset.h"
 
+enum SNAP_POSITION {
+  SNAP_CENTER,
+  SNAP_TOP_LEFT,
+  SNAP_TOP_RIGHT,
+  SNAP_BOTTOM_RIGHT,
+  SNAP_BOTTOM_LEFT
+};
+
 struct EntityData {
   int id;
   std::string name;
@@ -15,7 +23,7 @@ struct EntityData {
 };
 
 class Level {
-    Vec2 m_dimensions;
+    Vec2 m_dimensions; // size in cells
     Tileset m_tileset;
     std::vector<int> m_tiles;
     std::vector<EntityData> m_entities;
@@ -176,15 +184,126 @@ public:
         return true;
     }
 
-    void test_data() {
+    void test_data() const {
       std::cout << "Testing entities in m_entities:" << std::endl;
-      for (EntityData & entity : m_entities) {
+      for (const EntityData & entity : m_entities) {
         std::cout << "id: " << entity.id << std::endl;
         std::cout << "name: " << entity.name << std::endl;
         std::cout << "type: " << entity.type << std::endl;
         std::cout << "x: " << entity.x << std::endl;
         std::cout << "y: " << entity.y << std::endl;
       }
+    }
+
+    const Vec2 snap_to_grid(const Vec2 & pos, const SNAP_POSITION snap = SNAP_BOTTOM_LEFT) const {
+      Vec2 grid_coords = pos_to_grid(pos);
+      return grid_to_pos(grid_coords, snap);
+    }
+
+    const Vec2 pos_to_grid(const Vec2 & pos) const {
+      return Vec2({
+        std::floor((pos.x + 1) / m_tileset.tileWidth), // +1 for objects snapped to grid
+        std::floor((pos.y - 1) / m_tileset.tileHeight) /// -1 for objects snapped to grid
+      });
+    }
+
+    const Vec2 grid_to_pos(const Vec2 & coords, const SNAP_POSITION snap = SNAP_BOTTOM_LEFT) const {
+      Vec2 pos = {
+        coords.x * m_tileset.tileWidth,
+        coords.y * m_tileset.tileHeight,
+      };
+      switch (snap) {
+        case SNAP_TOP_LEFT: {
+          break;
+        }
+        case SNAP_TOP_RIGHT: {
+          pos.x += m_tileset.tileWidth;
+          break;
+        }
+        case SNAP_BOTTOM_RIGHT: {
+          pos.x += m_tileset.tileWidth;
+          pos.y += m_tileset.tileHeight;
+          break;
+        }
+        case SNAP_BOTTOM_LEFT: {
+          pos.y += m_tileset.tileHeight;
+          break;
+        }
+        case SNAP_CENTER: {
+          pos.x += m_tileset.tileWidth / 2.f;
+          pos.y += m_tileset.tileHeight / 2.f;
+          break;
+        }
+      }
+      return pos;
+    }
+
+    const int getTileAtCoords(const int x, const int y) const {
+      return m_tiles[getIndexAtCoords(x, y)];
+    }
+
+    const sf::IntRect getBoundsAtIndex(const int index) const {
+      const Vec2 coords = getCoordsAtIndex(index);
+      const Vec2 pos = grid_to_pos(coords, SNAP_TOP_LEFT);
+      return sf::IntRect{
+        (int)pos.x,
+        (int)pos.y,
+        (int)m_tileset.tileWidth,
+        (int)m_tileset.tileHeight
+      };
+    }
+
+    const Vec2 getCoordsAtIndex(const int index) const {
+      int y = std::floor(((float)index + 1) / m_dimensions.x);
+      int x = (index) % (int)m_dimensions.x;
+      std::cout << "index: " << index << ": " << x <<","<<y<<std::endl;
+      return Vec2(x, y);
+    }
+
+    const int getIndexAtCoords(const int x, const int y) const {
+      return y * m_dimensions.x + x;
+    }
+
+    std::vector<int> getNeighbours(const int index) const {
+      std::vector<int> neighbours;
+      // top
+      if (index - m_dimensions.x > 0) {
+        neighbours.push_back(index - m_dimensions.x);
+      }
+      // right
+      if (index % (int)m_dimensions.x < m_dimensions.x - 1 && index < m_tiles.size() - 1) {
+        neighbours.push_back(index + 1);
+      }
+      // bottom
+      if (index + m_dimensions.x < m_tiles.size()) {
+        neighbours.push_back(index + m_dimensions.x);
+      }
+      // left
+      if (index % (int)m_dimensions.x > 1 && index > 0) {
+        neighbours.push_back(index - 1);
+      }
+      return neighbours;
+    }
+
+    std::vector<int> getEdges() const {
+      std::vector<int> edges;
+      for (int i = 0; i < m_tiles.size(); ++i) {
+        if (m_tiles[i] == 0) {
+          continue;
+        }
+        const std::vector<int> neighbours = getNeighbours(i);
+        bool edge = false;
+        for (int index : neighbours) {
+          if (m_tiles[index] == 0) {
+            edge = true;
+            break;
+          }
+        }
+        if (edge) {
+          edges.push_back(i);
+        }
+      }
+      return edges;
     }
 
     const Vec2 & getDimensions() const {

@@ -1,6 +1,7 @@
 #include "../game_engine.h"
 #include <SFML/Window/Event.hpp>
 #include "../scenes/scene.h"
+#include "SFML/Window/Keyboard.hpp"
 #include <imgui.h>
 #include <imgui-SFML.h>
 

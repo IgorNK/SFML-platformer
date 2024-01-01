@@ -6,7 +6,15 @@
 #include <tuple>
 #include <vector>
 
-typedef std::tuple<CTransform, CBoundingBox, CAnimatedSprite> Components;
+typedef std::tuple<
+  CTransform, 
+  CVelocity, 
+  CBoundingBox, 
+  CAnimatedSprite, 
+  CInput,
+  CStaticCollision,
+  CDynamicCollision
+> Components;
 
 class Entity {
   friend class EntityManager;

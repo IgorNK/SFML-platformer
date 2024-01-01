@@ -18,22 +18,27 @@ class Scene_Play : public Scene {
   TileMap m_tilemap;
   size_t m_frameCount;
 
+  bool m_sDebugCollision{false};
   bool m_sDebugGrid{false};
   bool m_sRenderMap{true};
+
+  void register_input();
+  void init();
+  void onEnd();
+  void spawn_player(Vec2 position, bool snap_to_grid = true);
+  void spawn_entities(const Level &level);
+  void spawn_collision(const Level &level);
 
 public:
   Scene_Play(GameEngine *game, const std::string &level_path);
   ~Scene_Play() {}
 
-  void init();
   void update();
-  void onEnd();
-  void spawn_player(const Vec2 &position);
-  void spawn_entities(const Level &level);
 
   // Systems
-  void sAnimation();
   void sMovement();
+  void sUserInput();
+  void sInputHandling();
   void sRender();
   void sDoAction(const Action &action);
   void sDebug();

@@ -4,8 +4,8 @@
 struct Tileset {
   std::string name;
   std::string texturePath;
-  size_t tileWidth;
-  size_t tileHeight;
-  size_t width;
-  size_t height;
+  unsigned int tileWidth;
+  unsigned int tileHeight;
+  unsigned int width;
+  unsigned int height;
 };

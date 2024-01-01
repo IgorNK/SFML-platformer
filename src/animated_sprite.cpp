@@ -67,6 +67,10 @@ bool AnimatedSprite::play(const std::string &anim_name, const int speed = 10) {
   const sf::IntRect clipRect = m_currentFrames->at(0);
   m_sprite.setOrigin({(float)clipRect.width / 2, (float)clipRect.height / 2});
   m_sprite.setTextureRect(clipRect);
+  m_size = Vec2({
+    (float)clipRect.width,
+    (float)clipRect.height
+  });
   m_paused = false;
   return true;
 }
