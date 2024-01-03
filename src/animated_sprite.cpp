@@ -192,7 +192,7 @@ bool AnimatedSprite::load_file(const std::string &path, Assets &assets) {
       // "," << s_h << std::endl;
     }
   }
-  test_data();
+  // test_data();
   return true;
 }
 
