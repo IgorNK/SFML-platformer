@@ -1,10 +1,13 @@
 #pragma once
-#include <vector>
-#include <fstream>
-#include <iostream>
-#include <algorithm>
+#include "SFML/Graphics/Rect.hpp"
 #include "animated_sprite.h"
 #include "tileset.h"
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <limits.h>
+#include <optional>
+#include <vector>
 
 enum SNAP_POSITION {
   SNAP_CENTER,
@@ -23,10 +26,10 @@ struct EntityData {
 };
 
 class Level {
-    Vec2 m_dimensions; // size in cells
-    Tileset m_tileset;
-    std::vector<int> m_tiles;
-    std::vector<EntityData> m_entities;
+  Vec2 m_dimensions; // size in cells
+  Tileset m_tileset;
+  std::vector<int> m_tiles;
+  std::vector<EntityData> m_entities;
 
   void parse_tokens(const std::vector<std::string> &tokenstream) {
     bool nextHeading = true;
@@ -52,7 +55,7 @@ class Level {
       if (begin == std::string::npos) {
         continue;
       }
-      
+
       // Extract the key value
       std::string::size_type end = token.find('=', begin);
       if (end != std::string::npos) {
@@ -66,18 +69,18 @@ class Level {
       end = token.find_last_not_of(" ,]\"\f\n\r\t\v") + 1;
       value = token.substr(begin, end - begin);
       value.erase(value.find_last_not_of(" ,]\"\f\t\v") + 1);
-      
+
       // No blank keys allowed
       if (heading == "Level" && key == "tiles") {
-        size_t pos= 0;
+        size_t pos = 0;
         while ((pos = value.find(',')) != std::string::npos) {
-            const int int_val = std::stoi(value.substr(0, pos));
-            m_tiles.push_back(int_val);
-            value.erase(0, pos + 1);
+          const int int_val = std::stoi(value.substr(0, pos));
+          m_tiles.push_back(int_val);
+          value.erase(0, pos + 1);
         }
         if (!value.empty()) {
-            const int int_val = std::stoi(value.substr(0, pos));
-            m_tiles.push_back(int_val);
+          const int int_val = std::stoi(value.substr(0, pos));
+          m_tiles.push_back(int_val);
         }
       }
       if (heading == "Level" && key == "size") {
@@ -106,21 +109,26 @@ class Level {
         if (key == "id") {
           // std::cout << "key: " << key << ", value: " << value << std::endl;
           int id = std::stoi(value);
-          if (auto e = std::find_if(m_entities.begin(), m_entities.end(),
-          [&](EntityData ent){ return ent.id == id; }); e == m_entities.end()) {
+          if (auto e =
+                  std::find_if(m_entities.begin(), m_entities.end(),
+                               [&](EntityData ent) { return ent.id == id; });
+              e == m_entities.end()) {
             // this is a new id
             if (first_entity) {
-              // std::cout << "This entity is first. Skip pushing to array." << std::endl;
+              // std::cout << "This entity is first. Skip pushing to array." <<
+              // std::endl;
               first_entity = false;
             } else {
-              // std::cout << "Id " << id << " is a new id. Pushing created entity into array." << std::endl;
+              // std::cout << "Id " << id << " is a new id. Pushing created
+              // entity into array." << std::endl;
               m_entities.push_back(new_entity);
             }
             new_entity = {};
             new_entity.id = id;
             continue;
           } else {
-            // std::cout << "This id already exists, for some reason." << std::endl;
+            // std::cout << "This id already exists, for some reason." <<
+            // std::endl;
             continue;
           }
         } else if (key == "name") {
@@ -174,151 +182,588 @@ class Level {
     return 0;
   }
 
-
 public:
-    bool load_file(const std::string & filename) {
-        if (read_file(filename) != 0) {
-          std::cerr << "Failed to read level file " << filename << std::endl;
-          return false;
-        }
-        return true;
+  bool load_file(const std::string &filename) {
+    if (read_file(filename) != 0) {
+      std::cerr << "Failed to read level file " << filename << std::endl;
+      return false;
     }
+    return true;
+  }
 
-    void test_data() const {
-      std::cout << "Testing entities in m_entities:" << std::endl;
-      for (const EntityData & entity : m_entities) {
-        std::cout << "id: " << entity.id << std::endl;
-        std::cout << "name: " << entity.name << std::endl;
-        std::cout << "type: " << entity.type << std::endl;
-        std::cout << "x: " << entity.x << std::endl;
-        std::cout << "y: " << entity.y << std::endl;
-      }
+  void test_data() const {
+    std::cout << "Testing entities in m_entities:" << std::endl;
+    for (const EntityData &entity : m_entities) {
+      std::cout << "id: " << entity.id << std::endl;
+      std::cout << "name: " << entity.name << std::endl;
+      std::cout << "type: " << entity.type << std::endl;
+      std::cout << "x: " << entity.x << std::endl;
+      std::cout << "y: " << entity.y << std::endl;
     }
+  }
 
-    const Vec2 snap_to_grid(const Vec2 & pos, const SNAP_POSITION snap = SNAP_BOTTOM_LEFT) const {
-      Vec2 grid_coords = pos_to_grid(pos);
-      return grid_to_pos(grid_coords, snap);
-    }
+  const Vec2 snap_to_grid(const Vec2 &pos,
+                          const SNAP_POSITION snap = SNAP_BOTTOM_LEFT) const {
+    Vec2 grid_coords = pos_to_grid(pos);
+    return grid_to_pos(grid_coords, snap);
+  }
 
-    const Vec2 pos_to_grid(const Vec2 & pos) const {
-      return Vec2({
-        std::floor((pos.x + 1) / m_tileset.tileWidth), // +1 for objects snapped to grid
-        std::floor((pos.y - 1) / m_tileset.tileHeight) /// -1 for objects snapped to grid
-      });
-    }
+  const Vec2 pos_to_grid(const Vec2 &pos) const {
+    return Vec2({
+        std::floor((pos.x + 1) /
+                   m_tileset.tileWidth), // +1 for objects snapped to grid
+        std::floor((pos.y - 1) /
+                   m_tileset.tileHeight) /// -1 for objects snapped to grid
+    });
+  }
 
-    const Vec2 grid_to_pos(const Vec2 & coords, const SNAP_POSITION snap = SNAP_BOTTOM_LEFT) const {
-      Vec2 pos = {
+  const Vec2 grid_to_pos(const Vec2 &coords,
+                         const SNAP_POSITION snap = SNAP_BOTTOM_LEFT) const {
+    Vec2 pos = {
         coords.x * m_tileset.tileWidth,
         coords.y * m_tileset.tileHeight,
-      };
-      switch (snap) {
-        case SNAP_TOP_LEFT: {
-          break;
-        }
-        case SNAP_TOP_RIGHT: {
-          pos.x += m_tileset.tileWidth;
-          break;
-        }
-        case SNAP_BOTTOM_RIGHT: {
-          pos.x += m_tileset.tileWidth;
-          pos.y += m_tileset.tileHeight;
-          break;
-        }
-        case SNAP_BOTTOM_LEFT: {
-          pos.y += m_tileset.tileHeight;
-          break;
-        }
-        case SNAP_CENTER: {
-          pos.x += m_tileset.tileWidth / 2.f;
-          pos.y += m_tileset.tileHeight / 2.f;
-          break;
+    };
+    switch (snap) {
+    case SNAP_TOP_LEFT: {
+      break;
+    }
+    case SNAP_TOP_RIGHT: {
+      pos.x += m_tileset.tileWidth;
+      break;
+    }
+    case SNAP_BOTTOM_RIGHT: {
+      pos.x += m_tileset.tileWidth;
+      pos.y += m_tileset.tileHeight;
+      break;
+    }
+    case SNAP_BOTTOM_LEFT: {
+      pos.y += m_tileset.tileHeight;
+      break;
+    }
+    case SNAP_CENTER: {
+      pos.x += m_tileset.tileWidth / 2.f;
+      pos.y += m_tileset.tileHeight / 2.f;
+      break;
+    }
+    }
+    return pos;
+  }
+
+  const int getTileAtCoords(const int x, const int y) const {
+    return m_tiles[getIndexAtCoords(x, y)];
+  }
+
+  const sf::IntRect getBoundsAtIndex(const int index) const {
+    const Vec2 coords = getCoordsAtIndex(index);
+    const Vec2 pos = grid_to_pos(coords, SNAP_TOP_LEFT);
+    return sf::IntRect{(int)pos.x, (int)pos.y, (int)m_tileset.tileWidth,
+                       (int)m_tileset.tileHeight};
+  }
+
+  const Vec2 getCoordsAtIndex(const int index) const {
+    if (index > m_tiles.size()) {
+      throw std::runtime_error("getCoordsAtIndex: tile index too high: " +
+                               std::to_string(index));
+    }
+    int y = std::floor(((float)index) / m_dimensions.x);
+    int x = (index) % (int)m_dimensions.x;
+    // std::cout << "index: " << index << ": " << x << "," << y << std::endl;
+    if (x >= m_dimensions.x || y >= m_dimensions.y) {
+      throw std::runtime_error("Calculated position at index " +
+                               std::to_string(index) + " is out of bounds: [" +
+                               std::to_string(x) + ":" + std::to_string(y) +
+                               "]");
+    }
+    return Vec2(x, y);
+  }
+
+  const int getIndexAtCoords(const int x, const int y) const {
+    return y * m_dimensions.x + x;
+  }
+
+  std::vector<int> getNeighbours(const int index,
+                                 bool include_diagonals = false) const {
+    std::vector<int> neighbours;
+    // top
+    if (index - m_dimensions.x > 0) {
+      neighbours.push_back(index - m_dimensions.x);
+    }
+    // top right
+    if (include_diagonals && index - m_dimensions.x > 0 &&
+        index % (int)m_dimensions.x < m_dimensions.x - 1 &&
+        index < m_tiles.size() - 1) {
+      neighbours.push_back(index - m_dimensions.x + 1);
+    }
+    // right
+    if (index % (int)m_dimensions.x < m_dimensions.x - 1 &&
+        index < m_tiles.size() - 1) {
+      neighbours.push_back(index + 1);
+    }
+    // bottom right
+    if (include_diagonals && index % (int)m_dimensions.x < m_dimensions.x &&
+        index < m_tiles.size() - 1 && index + m_dimensions.x < m_tiles.size()) {
+      neighbours.push_back(index + m_dimensions.x + 1);
+    }
+    // bottom
+    if (index + m_dimensions.x < m_tiles.size()) {
+      neighbours.push_back(index + m_dimensions.x);
+    }
+    // bottom left
+    if (include_diagonals && index + m_dimensions.x < m_tiles.size() &&
+        index % (int)m_dimensions.x > 1 && index > 0) {
+      neighbours.push_back(index + m_dimensions.x - 1);
+    }
+    // left
+    if (index % (int)m_dimensions.x > 1 && index > 0) {
+      neighbours.push_back(index - 1);
+    }
+    // top left
+    if (include_diagonals && index % (int)m_dimensions.x > 1 && index > 0 &&
+        index - m_dimensions.x > 0) {
+      neighbours.push_back(index - m_dimensions.x - 1);
+    }
+    for (const int i : neighbours) {
+      if (i > m_tiles.size()) {
+        throw std::runtime_error("getNeighbours: tile index too high: " +
+                                 std::to_string(i));
+      }
+    }
+    return neighbours;
+  }
+
+  bool contains(const std::vector<int> &map, const int index) const {
+    return (std::find(map.begin(), map.end(), index) != map.end());
+  }
+
+  bool contains(const std::vector<int> &map,
+                const std::vector<int> &indices) const {
+    for (const int index : indices) {
+      if (!contains(map, index)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  sf::IntRect findShapeBounds(const std::vector<int> &indices) const {
+    std::vector<Vec2> coords;
+    for (int i : indices) {
+      if (i > m_tiles.size()) {
+        throw std::runtime_error("findShapeBounds: tile index too high: " +
+                                 std::to_string(i));
+      }
+      coords.push_back(getCoordsAtIndex(i));
+    }
+    int min_x = INT_MAX;
+    int min_y = INT_MAX;
+    int max_x = 0;
+    int max_y = 0;
+    for (Vec2 c : coords) {
+      if (c.x > max_x) {
+        max_x = c.x;
+      }
+      if (c.x < min_x) {
+        min_x = c.x;
+      }
+      if (c.y > max_y) {
+        max_y = c.y;
+      }
+      if (c.y < min_y) {
+        min_y = c.y;
+      }
+    }
+    int width = max_x - min_x + 1;
+    int height = max_y - min_y + 1;
+    // std::cout << "Bounds of ";
+    // for (auto i : indices) {
+    //   const Vec2 c = getCoordsAtIndex(i);
+    //   std::cout << c.x << ":" << c.y << "; ";
+    // }
+    // std::cout << std::endl
+    //           << min_x << ":" << min_y << "," << width << ":" << height
+    //           << std::endl;
+    return sf::IntRect(min_x, min_y, width, height);
+  }
+
+  enum SLICE_DIRECTION { SLICE_UP, SLICE_RIGHT, SLICE_DOWN, SLICE_LEFT };
+
+  std::vector<int> slice(const std::vector<int> &indices, int index,
+                         SLICE_DIRECTION dir) const {
+    std::vector<Vec2> coords;
+    std::cout << "Coords before slice:\n";
+    for (int i : indices) {
+      const Vec2 c = getCoordsAtIndex(i);
+      coords.push_back(c);
+      std::cout << i << " [" << c.x << ":" << c.y << "], ";
+      if (i > m_tiles.size()) {
+        throw std::runtime_error("slice pre-condition: Tile index too high: " +
+                                 std::to_string(i));
+      }
+    }
+    std::cout << std::endl;
+    std::cout << "Indices size: " << indices.size()
+              << ", vectors: " << coords.size() << std::endl;
+    if (indices.size() != coords.size()) {
+      throw std::runtime_error(
+          "slice coords conversion: wrong number of items! " +
+          std::to_string(indices.size()) +
+          " != " + std::to_string(coords.size()));
+    }
+    Vec2 hole_pos = getCoordsAtIndex(index);
+    std::vector<Vec2> sliced{};
+    switch (dir) {
+    case SLICE_UP: {
+      std::copy_if(coords.begin(), coords.end(), std::back_inserter(sliced),
+                   [&](Vec2 &vec) {
+                     if (vec.y < hole_pos.y) {
+                       const int index =
+                           getIndexAtCoords((int)vec.x, (int)vec.y);
+                       if (index > m_tiles.size()) {
+                         throw std::runtime_error(
+                             "slice up execution: copied index is too high: " +
+                             std::to_string(index) + " / " +
+                             std::to_string(m_tiles.size()));
+                       }
+                       return true;
+                     }
+                     return false;
+                   });
+      break;
+    }
+    case SLICE_RIGHT: {
+      std::copy_if(coords.begin(), coords.end(), std::back_inserter(sliced),
+                   [&](Vec2 &vec) {
+                     if (vec.x > hole_pos.x) {
+                       const int index =
+                           getIndexAtCoords((int)vec.x, (int)vec.y);
+                       if (index > m_tiles.size()) {
+                         throw std::runtime_error(
+                             "slice right execution: copied index at coords " +
+                             std::to_string((int)vec.x) + ":" +
+                             std::to_string((int)vec.y) +
+                             " is too high: " + std::to_string(index) + " / " +
+                             std::to_string(m_tiles.size()));
+                       }
+                       return true;
+                     }
+                     return false;
+                   });
+      break;
+    }
+    case SLICE_DOWN: {
+      std::copy_if(
+          coords.begin(), coords.end(), std::back_inserter(sliced),
+          [&](Vec2 &vec) {
+            if (vec.y > hole_pos.y) {
+              const int index = getIndexAtCoords((int)vec.x, (int)vec.y);
+              if (index > m_tiles.size()) {
+                throw std::runtime_error(
+                    "slice down execution: copied index is too high: " +
+                    std::to_string(index) + " / " +
+                    std::to_string(m_tiles.size()));
+              }
+              return true;
+            }
+            return false;
+          });
+      break;
+    }
+    case SLICE_LEFT: {
+      std::copy_if(
+          coords.begin(), coords.end(), std::back_inserter(sliced),
+          [&](Vec2 &vec) {
+            if (vec.x < hole_pos.x) {
+              const int index = getIndexAtCoords((int)vec.x, (int)vec.y);
+              if (index > m_tiles.size()) {
+                throw std::runtime_error(
+                    "slice left execution: copied index is too high: " +
+                    std::to_string(index) + " / " +
+                    std::to_string(m_tiles.size()));
+              }
+              return true;
+            }
+            return false;
+          });
+      break;
+    }
+    }
+    std::vector<int> sliced_idx;
+    std::cout << "coords after slice: \n";
+    for (Vec2 &v : sliced) {
+      const int index = getIndexAtCoords((int)v.x, (int)v.y);
+      std::cout << index << " [" << v.x << ":" << v.y << "]; ";
+      if (index > m_tiles.size()) {
+        throw std::runtime_error(
+            "slice result: tile index too high: " + std::to_string(index) +
+            "/ " + std::to_string(m_tiles.size()));
+      }
+      sliced_idx.push_back(index);
+    }
+    std::cout << std::endl;
+    // const sf::IntRect bounds = findShapeBounds(indices);
+    // std::cout << "Slice bounds " << bounds.left << ":" << bounds.top << ";"
+    //           << bounds.width << ":" << bounds.height << " from " << pos.x
+    //           << ":" << pos.y << "in direction " << dir
+    //           << ". Size before slice: " << indices.size()
+    //           << ", after: " << sliced_idx.size() << std::endl;
+
+    return sliced_idx;
+  }
+
+  int findFirstHole(const std::vector<int> &indices) const {
+    const sf::IntRect bounds = findShapeBounds(indices);
+    std::cout << "Supplied indices to find hole in: " << std::endl;
+    for (const int i : indices) {
+      if (i > m_tiles.size()) {
+        throw std::runtime_error("findFirstHole: Tile index too high: " +
+                                 std::to_string(i));
+      }
+      std::cout << i << ", ";
+    }
+    std::cout << std::endl;
+    for (int i = bounds.left; i < bounds.left + bounds.width; ++i) {
+      for (int j = bounds.top; j < bounds.top + bounds.height; ++j) {
+        int index = getIndexAtCoords(i, j);
+        if (!contains(indices, index)) {
+          std::cout << "Hole at " << index << std::endl;
+          if (index > m_tiles.size()) {
+            throw std::runtime_error(
+                "findFirstHole result: Tile index too high: " +
+                std::to_string(index));
+          }
+          return index;
         }
       }
-      return pos;
     }
+    return -1;
+  }
 
-    const int getTileAtCoords(const int x, const int y) const {
-      return m_tiles[getIndexAtCoords(x, y)];
+  void subtract(std::vector<int> &minuend,
+                const std::vector<int> &subtrahend) const {
+    for (const int i : subtrahend) {
+      minuend.erase(std::remove(minuend.begin(), minuend.end(), i),
+                    minuend.end());
     }
+  }
 
-    const sf::IntRect getBoundsAtIndex(const int index) const {
-      const Vec2 coords = getCoordsAtIndex(index);
-      const Vec2 pos = grid_to_pos(coords, SNAP_TOP_LEFT);
-      return sf::IntRect{
-        (int)pos.x,
-        (int)pos.y,
-        (int)m_tileset.tileWidth,
-        (int)m_tileset.tileHeight
-      };
-    }
-
-    const Vec2 getCoordsAtIndex(const int index) const {
-      int y = std::floor(((float)index + 1) / m_dimensions.x);
-      int x = (index) % (int)m_dimensions.x;
-      std::cout << "index: " << index << ": " << x <<","<<y<<std::endl;
-      return Vec2(x, y);
-    }
-
-    const int getIndexAtCoords(const int x, const int y) const {
-      return y * m_dimensions.x + x;
-    }
-
-    std::vector<int> getNeighbours(const int index) const {
-      std::vector<int> neighbours;
-      // top
-      if (index - m_dimensions.x > 0) {
-        neighbours.push_back(index - m_dimensions.x);
+  std::vector<std::vector<int>>
+  getRectIslands(const std::vector<int> &in_indices) const {
+    std::vector<int> indices = in_indices;
+    // Debug check max index
+    int max = 0;
+    for (const int i : in_indices) {
+      if (i > m_tiles.size()) {
+        throw std::runtime_error(
+            "getRectIslands pre-condition: tile index too high: " +
+            std::to_string(i));
       }
-      // right
-      if (index % (int)m_dimensions.x < m_dimensions.x - 1 && index < m_tiles.size() - 1) {
-        neighbours.push_back(index + 1);
+      if (i > max) {
+        max = i;
       }
-      // bottom
-      if (index + m_dimensions.x < m_tiles.size()) {
-        neighbours.push_back(index + m_dimensions.x);
-      }
-      // left
-      if (index % (int)m_dimensions.x > 1 && index > 0) {
-        neighbours.push_back(index - 1);
-      }
-      return neighbours;
     }
-
-    std::vector<int> getEdges() const {
-      std::vector<int> edges;
-      for (int i = 0; i < m_tiles.size(); ++i) {
-        if (m_tiles[i] == 0) {
-          continue;
+    Vec2 coords = getCoordsAtIndex(max);
+    std::cout << "Max index in supplied indices: " << max << ", " << coords.x
+              << ":" << coords.y << std::endl;
+    // End of debug check
+    std::vector<std::vector<int>> joined;
+    while (indices.size() > 0) {
+      std::vector<int> section = indices;
+      std::cout << "Let's find a hole in: " << std::endl;
+      for (const int i : section) {
+        if (i > m_tiles.size()) {
+          throw std::runtime_error("getRectIslands: tile index too high: " +
+                                   std::to_string(i));
         }
-        const std::vector<int> neighbours = getNeighbours(i);
-        bool edge = false;
-        for (int index : neighbours) {
-          if (m_tiles[index] == 0) {
-            edge = true;
-            break;
+        std::cout << i << ", ";
+      }
+      std::cout << std::endl;
+      int hole = findFirstHole(section);
+      // std::cout << "section size before hole loop: " << section.size()
+      //           << std::endl;
+      while (hole > 0) {
+        // Split the shape based on hole's location
+        const sf::IntRect bounds = findShapeBounds(section);
+        const Vec2 hole_coords = getCoordsAtIndex(hole);
+        // std::cout << "Section size: " << section.size() << ". Hole at "
+        //           << hole_coords.x << ":" << hole_coords.y << std::endl;
+        std::vector<int> sub_section;
+        int center_x = std::floor(bounds.left + bounds.width / 2);
+        int center_y = std::floor(bounds.top + bounds.height / 2);
+        int dx = hole_coords.x - center_x;
+        int dy = hole_coords.y - center_y;
+        // If the hole is at the edge
+        // dx < 0 - hole is on the left side, dx > 0 - on the right side
+        // dy < 0 - hole is on the upper side, dy > 0 - hole is on the lower
+        // side
+        const sf::IntRect sectionBounds = findShapeBounds(section);
+        if (sectionBounds.width > 1 || sectionBounds.height > 1) {
+          if (dx < 0 && dy < 0) {
+            // Left upper side
+            if (sectionBounds.width > 1 && std::abs(dx) >= std::abs(dy)) {
+              // std::cout
+              //     << "Hole is in the LEFT UPPER side, slicing to the
+              //     RIGHT\n";
+              sub_section = slice(section, hole, SLICE_RIGHT);
+            } else if (sectionBounds.height > 1) {
+              // std::cout
+              //     << "Hole is in the LEFT UPPER side, slicing to the
+              //     BOTTOM\n";
+              sub_section = slice(section, hole, SLICE_DOWN);
+            }
+          } else if (dx >= 0 && dy < 0) {
+            // Right upper side
+            if (sectionBounds.width > 1 && std::abs(dx) >= std::abs(dy)) {
+              // std::cout
+              //     << "Hole is in the RIGHT UPPER side, slicing to the
+              //     LEFT\n";
+              sub_section = slice(section, hole, SLICE_LEFT);
+            } else if (sectionBounds.height > 1) {
+              // std::cout
+              //     << "Hole is in the RIGHT UPPER side, slicing to the
+              //     BOTTOM\n";
+              sub_section = slice(section, hole, SLICE_DOWN);
+            }
+          } else if (dx >= 0 && dy >= 0) {
+            // Right lower side
+            if (sectionBounds.width > 1 && std::abs(dx) >= std::abs(dy)) {
+              // std::cout
+              //     << "Hole is in the RIGHT LOWER side, slicing to the
+              //     LEFT\n";
+              sub_section = slice(section, hole, SLICE_LEFT);
+            } else if (sectionBounds.height > 1) {
+              // std::cout
+              //     << "Hole is in the RIGHT LOWER side, slicing to the TOP\n";
+              sub_section = slice(section, hole, SLICE_UP);
+            }
+          } else if (dx < 0 && dy >= 0) {
+            // Left lower side
+            if (sectionBounds.width > 1 && std::abs(dx) >= std::abs(dy)) {
+              // std::cout
+              //     << "Hole is in the LEFT LOWER side, slicing to the
+              //     RIGHT\n";
+              sub_section = slice(section, hole, SLICE_RIGHT);
+            } else if (sectionBounds.height > 1) {
+              // std::cout << "Hole is in the LEFT LOWER side, slicing to the
+              // TOP\n";
+              sub_section = slice(section, hole, SLICE_UP);
+            }
+          } else {
+            std::cerr << "Unexpected behaviour, dx:" << dx << ", dy:" << dy
+                      << ", section width:" << sectionBounds.width
+                      << ", height:" << sectionBounds.height << std::endl;
+          }
+        } else {
+          std::cout << "Section is 1 tile in size. Hole is: " << hole_coords.x
+                    << ":" << hole_coords.y;
+          std::cout << "; Section contains: ";
+          for (const auto i : section) {
+            std::cout << i << ",";
+          }
+          std::cout << std::endl;
+        }
+        section.clear();
+        section = sub_section;
+        for (int i : section) {
+          if (i > m_tiles.size()) {
+            throw std::runtime_error(
+                "getRectIslands mid-execution: index in section is to high: " +
+                std::to_string(i));
           }
         }
-        if (edge) {
-          edges.push_back(i);
+        hole = findFirstHole(section);
+      }
+      // Win condition: found a section with no holes
+      // std::cout << "Found section with no holes: \n";
+      // for (auto &e : section) {
+      //   Vec2 coords = getCoordsAtIndex(e);
+      //   std::cout << coords.x << ":" << coords.y << "; ";
+      // }
+      // std::cout << std::endl;
+      subtract(indices, section);
+      joined.push_back(section);
+    }
+    return joined;
+  }
+
+  std::vector<sf::IntRect>
+  getJoinedBounds(const std::vector<std::vector<int>> &islands) const {
+    std::vector<sf::IntRect> joined_bounds;
+    for (const std::vector<int> &island : islands) {
+      sf::IntRect bounds = findShapeBounds(island);
+      joined_bounds.push_back(bounds);
+      std::cout << "Found shape: ";
+      for (const auto i : island) {
+        if (i > m_tiles.size()) {
+          throw std::runtime_error("getJoinedBounds: tile index too high: " +
+                                   std::to_string(i));
+        }
+        std::cout << i << ", ";
+      }
+      std::cout << "Bounds: " << bounds.left << ":" << bounds.top << ","
+                << bounds.width << ":" << bounds.height << std::endl;
+    }
+    return joined_bounds;
+  }
+
+  std::vector<int> getEdges() const {
+    std::vector<int> edges;
+    for (int i = 0; i < m_tiles.size(); ++i) {
+      if (m_tiles[i] == 0) {
+        continue;
+      }
+      const std::vector<int> neighbours = getNeighbours(i, true);
+      bool edge = false;
+      for (int index : neighbours) {
+        if (index > m_tiles.size()) {
+          throw std::runtime_error("getEdges: tile index too high: " +
+                                   std::to_string(i));
+        }
+        // std::cout << "Tile " << index;
+        if (m_tiles[index] == 0) {
+          // std::cout << " is the edge.\n";
+          edge = true;
+          break;
+        } else {
+          // std::cout << " is not the edge.\n";
         }
       }
-      return edges;
+      if (edge) {
+        edges.push_back(i);
+      }
     }
+    std::cout << "Found " << edges.size() << "edges: \n";
+    for (const int i : edges) {
+      std::cout << i << ", ";
+    }
+    return edges;
+  }
 
-    const Vec2 & getDimensions() const {
-      return m_dimensions;
+  std::vector<sf::IntRect> getEdgeBounds() const {
+    std::vector<sf::IntRect> edge_bounds;
+    const std::vector<int> edges = getEdges();
+    const std::vector<std::vector<int>> edgeIslands = getRectIslands(edges);
+    for (const std::vector<int> &island : edgeIslands) {
+      const sf::IntRect islandDims = findShapeBounds(island);
+      std::cout << "Found island " << islandDims.left << ":" << islandDims.top
+                << "," << islandDims.width << ":" << islandDims.height
+                << std::endl;
+      const sf::IntRect bounds = {
+          (int)(islandDims.left * m_tileset.tileWidth),
+          (int)(islandDims.top * m_tileset.tileHeight),
+          (int)(islandDims.width * m_tileset.tileWidth),
+          (int)(islandDims.height * m_tileset.tileHeight)};
+      std::cout << "Created shape " << bounds.left << ":" << bounds.top << ","
+                << bounds.width << ":" << bounds.height << std::endl;
+      edge_bounds.push_back(bounds);
     }
+    return edge_bounds;
+  }
 
-    const Tileset & getTileset() const {
-      return m_tileset;
-    }
+  const Vec2 &getDimensions() const { return m_dimensions; }
 
-    const std::vector<int> & getTiles() const {
-      return m_tiles;
-    }
+  const Tileset &getTileset() const { return m_tileset; }
 
-    const std::vector<EntityData> & getEntities() const {
-      return m_entities;
-    }
+  const std::vector<int> &getTiles() const { return m_tiles; }
+
+  const std::vector<EntityData> &getEntities() const { return m_entities; }
 };
