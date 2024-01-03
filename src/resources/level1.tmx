@@ -29,7 +29,7 @@
 </data>
  </layer>
  <objectgroup id="2" name="Entities">
-  <object id="5" name="PlayerStart" type="EntitySpawn" x="448" y="352">
+  <object id="5" name="PlayerStart" type="EntitySpawn" x="592" y="315.5">
    <point/>
   </object>
   <object id="6" name="CoinBrick" type="EntitySpawn" x="336" y="304"/>

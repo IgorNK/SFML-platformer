@@ -249,6 +249,16 @@ public:
     return pos;
   }
 
+  const std::vector<int> getNonZeroTiles() const {
+    std::vector<int> tiles;
+    for (int i = 0; i < m_tiles.size(); ++i) {
+      if (m_tiles[i] != 0) {
+        tiles.push_back(i);
+      }
+    }
+    return tiles;
+  }
+
   const int getTileAtCoords(const int x, const int y) const {
     return m_tiles[getIndexAtCoords(x, y)];
   }
@@ -392,13 +402,17 @@ public:
 
   sf::IntRect findShapeBounds(const std::vector<int> &indices) const {
     std::vector<Vec2> coords;
+    // std::cout << "Finding bounds of cells: \n";
     for (int i : indices) {
       if (i > m_tiles.size() - 1) {
         throw std::runtime_error("findShapeBounds: tile index too high: " +
                                  std::to_string(i));
       }
-      coords.push_back(getCoordsAtIndex(i));
+      Vec2 c = getCoordsAtIndex(i);
+      // std::cout << i << " [" << c.x << ":" << c.y << "], ";
+      coords.push_back(c);
     }
+    // std::cout << std::endl;
     int min_x = INT_MAX;
     int min_y = INT_MAX;
     int max_x = 0;
@@ -555,12 +569,12 @@ public:
     return sliced_idx;
   }
 
-  int findFirstHole(const std::vector<int> &indices) const {
+  int findFirstCell(const std::vector<int> &indices, bool is_hole) const {
     const sf::IntRect bounds = findShapeBounds(indices);
     // std::cout << "Supplied indices to find hole in: " << std::endl;
     for (const int i : indices) {
       if (i > m_tiles.size() - 1) {
-        throw std::runtime_error("findFirstHole: Tile index too high: " +
+        throw std::runtime_error("findFirstHole pre-condition: Tile index too high: " +
                                  std::to_string(i));
       }
       // std::cout << i << ", ";
@@ -569,7 +583,7 @@ public:
     for (int i = bounds.left; i < bounds.left + bounds.width; ++i) {
       for (int j = bounds.top; j < bounds.top + bounds.height; ++j) {
         int index = getIndexAtCoords(i, j);
-        if (!contains(indices, index)) {
+        if (!contains(indices, index) == is_hole) {
           // std::cout << "Hole at " << index << std::endl;
           if (index > m_tiles.size() - 1) {
             throw std::runtime_error(
@@ -583,6 +597,68 @@ public:
     return -1;
   }
 
+  int findLastCellInRow(const std::vector<int> &indices, bool is_hole, unsigned int row = 0) const {
+    const sf::IntRect bounds = findShapeBounds(indices);
+    std::cout << "find last cell in row supplied indices: ";
+    for (const int i : indices) {
+      std::cout << i << ", ";
+      if (i > m_tiles.size() - 1) {
+        throw std::runtime_error("findLastCellInRow pre-condition: Tile index too high: " +
+                                 std::to_string(i));
+      }
+    }
+    std::cout << std::endl;
+    if (indices.size() == 0) {
+      throw std::runtime_error("findLastCellInRow pre-condition: empty indices");
+    }
+    int cell = indices[0];
+    for (int i = bounds.left; i < bounds.left + bounds.width; ++i) {
+      int j = bounds.top + row;
+      int index = getIndexAtCoords(i, j);
+      if (!contains(indices, index) == is_hole) {
+        if (index > m_tiles.size() - 1) {
+          throw std::runtime_error(
+              "findLastCellInRow result: Tile index too high: " +
+              std::to_string(index));
+        }
+        cell = index;
+        std::cout << "cell " << index << " [" << i << ":" << j << "] is in indices.\n";
+      } else {
+        break;
+      }
+    }
+    return cell;
+  }
+
+  int findLastCellInColumn(const std::vector<int> &indices, bool is_hole, unsigned int column = 0) const {
+    const sf::IntRect bounds = findShapeBounds(indices);
+    for (const int i : indices) {
+      if (i > m_tiles.size() - 1) {
+        throw std::runtime_error("findLastCellInColumn pre-condition: Tile index too high: " +
+                                 std::to_string(i));
+      }
+    }
+    if (indices.size() == 0) {
+      throw std::runtime_error("findLastCellInRow pre-condition: empty indices");
+    }
+    int cell = indices[0];
+    for (int j = bounds.top; j < bounds.top + bounds.height; ++j) {
+      int i = bounds.left + column;
+      int index = getIndexAtCoords(i, j);
+      if (!contains(indices, index) == is_hole) {
+        if (index > m_tiles.size() - 1) {
+          throw std::runtime_error(
+              "findLastCellInColumn result: Tile index too high: " +
+              std::to_string(index));
+        }
+        cell = index;
+      } else {
+        break;
+      }
+    }
+    return cell;
+  }
+
   void subtract(std::vector<int> &minuend,
                 const std::vector<int> &subtrahend) const {
     for (const int i : subtrahend) {
@@ -593,6 +669,7 @@ public:
 
   std::vector<std::vector<int>>
   getRectIslands(const std::vector<int> &in_indices) const {
+    static int iter = 0;
     std::vector<int> indices = in_indices;
     // Debug check max index
     int max = 0;
@@ -613,19 +690,20 @@ public:
     std::vector<std::vector<int>> joined;
     while (indices.size() > 0) {
       std::vector<int> section = indices;
-      // std::cout << "Let's find a hole in: " << std::endl;
+      std::cout << "Let's find a hole in: " << std::endl;
       for (const int i : section) {
         if (i > m_tiles.size() - 1) {
           throw std::runtime_error("getRectIslands: tile index too high: " +
                                    std::to_string(i));
         }
-        // std::cout << i << ", ";
+        std::cout << i << ", ";
       }
-      // std::cout << std::endl;
-      int hole = findFirstHole(section);
+      std::cout << std::endl;
+      int hole = findFirstCell(section, true);
       // std::cout << "section size before hole loop: " << section.size()
       //           << std::endl;
       while (hole > 0) {
+        iter++;
         // Split the shape based on hole's location
         const sf::IntRect bounds = findShapeBounds(section);
         const Vec2 hole_coords = getCoordsAtIndex(hole);
@@ -645,51 +723,53 @@ public:
           if (dx < 0 && dy < 0) {
             // Left upper side
             if (sectionBounds.width > 1 && std::abs(dx) >= std::abs(dy)) {
-              // std::cout
-              //     << "Hole is in the LEFT UPPER side, slicing to the
-              //     RIGHT\n";
-              sub_section = slice(section, hole, SLICE_RIGHT);
+              std::cout << "Hole is in the LEFT UPPER side, slicing to the RIGHT\n";
+              // int last_hole = findLastCellInRow(section, true, hole_coords.y - sectionBounds.top);
+              int last_hole = findLastCellInRow(section, true);
+              Vec2 last_hole_coords = getCoordsAtIndex(last_hole);
+              std::cout << "Hole is " << hole_coords.x << ":" << hole_coords.y << ". Last one is " << last_hole_coords.x << ":" << last_hole_coords.y << std::endl;
+              sub_section = slice(section, last_hole, SLICE_RIGHT);
             } else if (sectionBounds.height > 1) {
-              // std::cout
-              //     << "Hole is in the LEFT UPPER side, slicing to the
-              //     BOTTOM\n";
-              sub_section = slice(section, hole, SLICE_DOWN);
+              std::cout << "Hole is in the LEFT UPPER side, slicing to the BOTTOM\n";
+              // int last_hole = findLastCellInColumn(section, true, hole_coords.x - sectionBounds.left);
+              int last_hole = findLastCellInColumn(section, true);
+              Vec2 last_hole_coords = getCoordsAtIndex(last_hole);
+              std::cout << "Hole is " << hole_coords.x << ":" << hole_coords.y << ". Last one is " << last_hole_coords.x << ":" << last_hole_coords.y << std::endl;
+              sub_section = slice(section, last_hole, SLICE_DOWN);
             }
           } else if (dx >= 0 && dy < 0) {
             // Right upper side
             if (sectionBounds.width > 1 && std::abs(dx) >= std::abs(dy)) {
-              // std::cout
-              //     << "Hole is in the RIGHT UPPER side, slicing to the
-              //     LEFT\n";
+              std::cout << "Hole is in the RIGHT UPPER side, slicing to the LEFT\n";
               sub_section = slice(section, hole, SLICE_LEFT);
             } else if (sectionBounds.height > 1) {
-              // std::cout
-              //     << "Hole is in the RIGHT UPPER side, slicing to the
-              //     BOTTOM\n";
-              sub_section = slice(section, hole, SLICE_DOWN);
+              std::cout << "Hole is in the RIGHT UPPER side, slicing to the BOTTOM\n";
+              // int last_hole = findLastCellInColumn(section, true, hole_coords.x - sectionBounds.left);
+              int last_hole = findLastCellInColumn(section, true);
+              Vec2 last_hole_coords = getCoordsAtIndex(last_hole);
+              std::cout << "Hole is " << hole_coords.x << ":" << hole_coords.y << ". Last one is " << last_hole_coords.x << ":" << last_hole_coords.y << std::endl;
+              sub_section = slice(section, last_hole, SLICE_DOWN);
             }
           } else if (dx >= 0 && dy >= 0) {
             // Right lower side
             if (sectionBounds.width > 1 && std::abs(dx) >= std::abs(dy)) {
-              // std::cout
-              //     << "Hole is in the RIGHT LOWER side, slicing to the
-              //     LEFT\n";
+              std::cout << "Hole is in the RIGHT LOWER side, slicing to the LEFT\n";
               sub_section = slice(section, hole, SLICE_LEFT);
             } else if (sectionBounds.height > 1) {
-              // std::cout
-              //     << "Hole is in the RIGHT LOWER side, slicing to the TOP\n";
+              std::cout << "Hole is in the RIGHT LOWER side, slicing to the TOP\n";
               sub_section = slice(section, hole, SLICE_UP);
             }
           } else if (dx < 0 && dy >= 0) {
             // Left lower side
             if (sectionBounds.width > 1 && std::abs(dx) >= std::abs(dy)) {
-              // std::cout
-              //     << "Hole is in the LEFT LOWER side, slicing to the
-              //     RIGHT\n";
-              sub_section = slice(section, hole, SLICE_RIGHT);
+              std::cout << "Hole is in the LEFT LOWER side, slicing to the RIGHT\n";
+              // int last_hole = findLastCellInRow(section, true, hole_coords.y - sectionBounds.top);
+              int last_hole = findLastCellInRow(section, true);
+              Vec2 last_hole_coords = getCoordsAtIndex(last_hole);
+              std::cout << "Hole is " << hole_coords.x << ":" << hole_coords.y << ". Last one is " << last_hole_coords.x << ":" << last_hole_coords.y << std::endl;
+              sub_section = slice(section, last_hole, SLICE_RIGHT);
             } else if (sectionBounds.height > 1) {
-              // std::cout << "Hole is in the LEFT LOWER side, slicing to the
-              // TOP\n";
+              std::cout << "Hole is in the LEFT LOWER side, slicing to the TOP\n";
               sub_section = slice(section, hole, SLICE_UP);
             }
           } else {
@@ -715,7 +795,7 @@ public:
                 std::to_string(i));
           }
         }
-        hole = findFirstHole(section);
+        hole = findFirstCell(section, true);
       }
       // Win condition: found a section with no holes
       // std::cout << "Found section with no holes: \n";
@@ -727,6 +807,7 @@ public:
       subtract(indices, section);
       joined.push_back(section);
     }
+    std::cout << "iterations: " << iter << std::endl;
     return joined;
   }
 
@@ -756,7 +837,7 @@ public:
       if (m_tiles[i] == 0) {
         continue;
       }
-      const std::vector<int> neighbours = getNeighbours(i, true);
+      const std::vector<int> neighbours = getNeighbours(i, false);
       bool edge = false;
       for (int index : neighbours) {
         if (index > m_tiles.size() - 1) {
@@ -786,6 +867,7 @@ public:
   std::vector<sf::IntRect> getEdgeBounds() const {
     std::vector<sf::IntRect> edge_bounds;
     const std::vector<int> edges = getEdges();
+    // const std::vector<int> edges = getNonZeroTiles();
     const std::vector<std::vector<int>> edgeIslands = getRectIslands(edges);
     for (const std::vector<int> &island : edgeIslands) {
       const sf::IntRect islandDims = findShapeBounds(island);
@@ -802,6 +884,114 @@ public:
       edge_bounds.push_back(bounds);
     }
     return edge_bounds;
+  }
+
+  bool is_collider(const int x, const int y) const {
+    return m_tiles[getIndexAtCoords(x, y)] != 0;
+  }
+
+  struct Rect {
+    int start_x;
+    int start_y;
+    int end_x;
+    int end_y;
+  };
+
+  void sortVertically(std::vector<Rect> & rects) const {
+    std::sort(rects.begin(), rects.end(), 
+      [](const Rect & a, const Rect & b) { 
+        return a.start_y < b.start_y;
+       });
+  }
+
+// Tile-merging algorithm from https://love2d.org/wiki/TileMerging, merges everything in columns
+  std::vector<sf::IntRect> getCombinedColliders() const {
+    std::vector<Rect> rectangles = {};
+
+    for (int x = 0; x < m_dimensions.x - 1; ++x) {
+      int start_y = -1;
+      int end_y = -1;
+
+      for (int y = 0; y < m_dimensions.y - 1; ++y) {
+        if (is_collider(x, y)) {
+          if (start_y < 0) {
+            start_y = y;
+          }
+          end_y = y;
+        } else if (start_y >= 0) {
+          std::vector<Rect> overlaps = {};
+          for (const Rect & r : rectangles) {
+            if ((r.end_x == x - 1)
+              && (start_y < r.start_y)
+              && (end_y >= r.end_y)) {
+                overlaps.push_back(r);
+              }
+          }
+          sortVertically(overlaps);
+
+          for (Rect & r : overlaps) {
+            if (start_y < r.start_y) {
+              const Rect new_rect = {
+                x,
+                start_y,
+                x,
+                r.start_y - 1
+              };
+              rectangles.push_back(new_rect);
+              start_y = r.start_y;
+            }
+
+            if (start_y == r.start_y) {
+              r.end_x = r.end_x + 1;
+
+              if (end_y == r.end_y) {
+                start_y = -1;
+                end_y = -1;
+              } else if (end_y > r.end_y) {
+                start_y = r.end_y + 1;
+              }
+            }
+          }
+
+          if (start_y >= 0) {
+            const Rect new_rect = {
+              x,
+              start_y,
+              x,
+              end_y
+            };
+            rectangles.push_back(new_rect);
+
+            start_y = -1;
+            end_y = -1;
+          }
+        }
+      }
+
+      if (start_y >= 0) {
+        const Rect new_rect = {
+          x,
+          start_y,
+          x,
+          end_y
+        };
+        rectangles.push_back(new_rect);
+
+        start_y = -1;
+        end_y = -1;
+      }
+    }
+
+    std::vector<sf::IntRect> int_rects = {};
+    for (const Rect r : rectangles) {
+      int_rects.push_back(sf::IntRect(
+        r.start_x * m_tileset.tileWidth,
+        r.start_y * m_tileset.tileHeight,
+        r.end_x * m_tileset.tileWidth - r.start_x * m_tileset.tileWidth + m_tileset.tileWidth,
+        r.end_y * m_tileset.tileHeight - r.start_y * m_tileset.tileHeight + m_tileset.tileHeight
+      ));
+    }
+    return int_rects;
   }
 
   const Vec2 &getDimensions() const { return m_dimensions; }

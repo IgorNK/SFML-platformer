@@ -15,6 +15,7 @@ void Scene_Play::update() {
   sInputHandling();
   sMovement();
   sCollision();
+  sCamera();
   sDebug();
   ++m_frameCount;
 }
@@ -28,8 +29,6 @@ void Scene_Play::init() {
     return;
   }
 
-  // m_view = sf::View();
-  // m_game->getWindow().setView(m_view);
 
   if (!m_level.load_file(m_levelPath)) {
     std::cerr << "Scene failed to initialize, couldn't load " << m_levelPath
@@ -60,6 +59,38 @@ void Scene_Play::init() {
   m_debug_grid = spawn_grid(m_size_pixels, m_grid_size);
 
   register_input();
+
+  
+  m_view = sf::View(sf::Vector2f(0, 0), (sf::Vector2f)m_game->getWindow().getSize());
+  m_game->getWindow().setView(m_view);
+}
+
+void Scene_Play::sCamera() {
+  if (!m_player) {
+    return;
+  }
+  CTransform & xform = m_player->getComponent<CTransform>();
+  if (xform.has) {
+    Vec2 levelSize = {
+      m_level.getDimensions().x * m_level.getTileset().tileWidth,
+      m_level.getDimensions().y * m_level.getTileset().tileHeight
+    };
+    Vec2 playerPos = xform.pos;
+    sf::Vector2f viewSize = m_view.getSize();
+    if (playerPos.x - viewSize.x / 2 < 0) {
+      playerPos.x = viewSize.x / 2;
+    }
+    if (playerPos.x + viewSize.x / 2 > levelSize.x) {
+      playerPos.x = levelSize.x - viewSize.x / 2;
+    }
+    if (playerPos.y - viewSize.y / 2 < 0) {
+      playerPos.y = viewSize.y / 2;
+    }
+    if (playerPos.y + viewSize.y / 2 > levelSize.y) {
+      playerPos.y = levelSize.y - viewSize.y / 2;
+    }
+    m_view.setCenter(sf::Vector2f(playerPos.x, playerPos.y));
+  }
 }
 
 void Scene_Play::register_input() {
@@ -246,6 +277,7 @@ void Scene_Play::spawn_collision(const Level &level) {
   // const std::vector<sf::IntRect> edges =
   //     level.getJoinedBounds(level.getRectIslands(level.getTiles()));
   const std::vector<sf::IntRect> edges = level.getEdgeBounds();
+  // const std::vector<sf::IntRect> edges = level.getCombinedColliders();
   for (const sf::IntRect &rect : edges) {
     const auto collision = m_entities.add_entity(Tag::StaticCollision);
     collision->addComponent<CBoundingBox>(rect);
@@ -309,6 +341,7 @@ void Scene_Play::sRender() {
       window.draw(s_box);
     }
   }
+  window.setView(m_view);
 }
 
 void Scene_Play::sMovement() {

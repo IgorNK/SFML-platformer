@@ -40,6 +40,7 @@ public:
   void sUserInput();
   void sInputHandling();
   void sRender();
+  void sCamera();
   void sDoAction(const Action &action);
   void sDebug();
   std::vector<DebugCell> spawn_grid(const Vec2 &size, const Vec2 &grid_size);
