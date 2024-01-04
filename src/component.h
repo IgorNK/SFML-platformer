@@ -33,15 +33,19 @@ public:
 class CBoundingBox : public Component {
 public:
   sf::IntRect rect {0, 0, 32, 32};
+  Vec2 halfSize {16, 16};
   CBoundingBox() {}
   CBoundingBox(const sf::IntRect & in_rect)
-    : rect(in_rect) 
+    : rect(in_rect)
+    , halfSize(in_rect.width / 2, in_rect.height / 2)
   { }
   CBoundingBox(const int width, const int height)
-    : rect(sf::IntRect(0, 0, width, height))
+    : rect({0, 0, width, height})
+    , halfSize(width / 2, height / 2)
   { }
   CBoundingBox(const int x, const int y, const int width, const int height)
-    : rect(sf::IntRect(x, y, width, height))
+    : rect({x, y, width, height})
+    , halfSize(width / 2, height / 2)
   { }
   ~CBoundingBox() {}
 };
@@ -68,8 +72,17 @@ public:
   ~CStaticCollision(){}
 };
 
+struct Overlap {
+  float right;
+  float left;
+  float bottom;
+  float top;
+};
+
 class CDynamicCollision : public Component {
 public:
+  Overlap overlap {0, 0, 0, 0};
+  Overlap prevOverlap {0, 0, 0, 0};
   CDynamicCollision(){}
   ~CDynamicCollision(){}
 };

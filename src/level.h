@@ -390,6 +390,11 @@ public:
     return (std::find(map.begin(), map.end(), index) != map.end());
   }
 
+  bool contains(const std::vector<int> &map, const int x, const int y) const {
+    int index = getIndexAtCoords(x, y);
+    return contains(map, index);
+  }
+
   bool contains(const std::vector<int> &map,
                 const std::vector<int> &indices) const {
     for (const int index : indices) {
@@ -905,15 +910,16 @@ public:
   }
 
 // Tile-merging algorithm from https://love2d.org/wiki/TileMerging, merges everything in columns
-  std::vector<sf::IntRect> getCombinedColliders() const {
+  std::vector<sf::IntRect> getCombinedColliders(std::vector<int> & indices) const {
     std::vector<Rect> rectangles = {};
+    sf::IntRect bounds = findShapeBounds(indices);
 
-    for (int x = 0; x < m_dimensions.x - 1; ++x) {
+    for (int x = bounds.left; x < bounds.left + bounds.height - 1; ++x) {
       int start_y = -1;
       int end_y = -1;
 
-      for (int y = 0; y < m_dimensions.y - 1; ++y) {
-        if (is_collider(x, y)) {
+      for (int y = bounds.top; y < bonds.top + bounds.height - 1; ++y) {
+        if (contains(indices, x, y)) {
           if (start_y < 0) {
             start_y = y;
           }
