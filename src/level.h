@@ -910,7 +910,7 @@ public:
   }
 
 // Tile-merging algorithm from https://love2d.org/wiki/TileMerging, merges everything in columns
-  std::vector<sf::IntRect> getCombinedColliders(std::vector<int> & indices) const {
+  std::vector<sf::IntRect> getCombinedColliders(const std::vector<int> & indices) const {
     std::vector<Rect> rectangles = {};
     sf::IntRect bounds = findShapeBounds(indices);
 
@@ -918,7 +918,7 @@ public:
       int start_y = -1;
       int end_y = -1;
 
-      for (int y = bounds.top; y < bonds.top + bounds.height - 1; ++y) {
+      for (int y = bounds.top; y < bounds.top + bounds.height - 1; ++y) {
         if (contains(indices, x, y)) {
           if (start_y < 0) {
             start_y = y;

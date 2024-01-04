@@ -82,7 +82,7 @@ struct Overlap {
 class CDynamicCollision : public Component {
 public:
   Overlap overlap {0, 0, 0, 0};
-  Overlap prevOverlap {0, 0, 0, 0};
+  Overlap prevOverlap {-1, -1, -1, -1};
   CDynamicCollision(){}
   ~CDynamicCollision(){}
 };

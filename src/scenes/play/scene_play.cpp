@@ -258,6 +258,7 @@ void Scene_Play::spawn_player(Vec2 position, bool snap_to_grid) {
   p_sprite.play("Idle", 10);
   m_player->addComponent<CBoundingBox>(p_sprite.getSize().x,
                                        p_sprite.getSize().y);
+  m_player->addComponent<CDynamicCollision>();
   m_player->addComponent<CInput>();
 }
 
@@ -266,8 +267,9 @@ void Scene_Play::spawn_collision(const Level &level) {
                     (float)level.getTileset().tileHeight};
   int width = level.getDimensions().x;
   int height = level.getDimensions().y;
-  const std::vector<int> edge_cells = level.getEdges();
-  const std::vector<sf::IntRect> edges = level.getCombinedColliders(edge_cells);
+  const std::vector<sf::IntRect> edges = level.getEdgeBounds();
+  // const std::vector<int> edge_cells = level.getEdges();
+  // const std::vector<sf::IntRect> edges = level.getCombinedColliders(edge_cells);
   for (const sf::IntRect &rect : edges) {
     const auto collision = m_entities.add_entity(Tag::StaticCollision);
     collision->addComponent<CBoundingBox>(rect);
@@ -347,26 +349,28 @@ void Scene_Play::sMovement() {
 }
 
 void Scene_Play::sCollision() {
-  for (const std::shared_ptr<Entity> p : m_entities.getEntities(Tag::Player)) {
+  for (const std::shared_ptr<Entity> p : m_entities.get_entities(Tag::Player)) {
     CDynamicCollision & p_col = p->getComponent<CDynamicCollision>();
     const CBoundingBox & p_bbox = p->getComponent<CBoundingBox>();
     CTransform & p_xform = p->getComponent<CTransform>();
     if (!p_col.has || !p_bbox.has || !p_xform.has) {
+      std::cerr << "Player doesn't have required collision\n";
       continue;
     }
     p_col.prevOverlap = p_col.overlap;
 
     // Collision detection:
-    for (const std::shared_ptr<Entity> wall : m_entities.getEntities(Tag::StaticCollision)) {
+    for (const std::shared_ptr<Entity> wall : m_entities.get_entities(Tag::StaticCollision)) {
       const CStaticCollision & w_col = wall->getComponent<CStaticCollision>();
       const CBoundingBox & w_bbox = wall->getComponent<CBoundingBox>();
       if (!w_col.has || !w_bbox.has) {
+        std::cerr << "Static collision doesn't have required components\n";
         continue;
       }
-      float x_a = w_bbox.left + w_bbox.width - (p_xform.pos.x - p_col.halfSize.x); // Player to the right
-      float x_b = p_xform.pos.x + p_col.halfSize.x - w_bbox.left; // player to the left
-      float y_a = w_bbox.top  + w_bbox.height - ( p_xform.pos.y - p_col.halfSize.y); // player below
-      float y_b = p_xform.pos.y + p_col.halfSize.y - w_bbox.top; // player on top
+      float x_a = w_bbox.rect.left + w_bbox.rect.width - (p_xform.pos.x - p_bbox.halfSize.x); // Player to the right
+      float x_b = p_xform.pos.x + p_bbox.halfSize.x - w_bbox.rect.left; // player to the left
+      float y_a = w_bbox.rect.top  + w_bbox.rect.height - ( p_xform.pos.y - p_bbox.halfSize.y); // player below
+      float y_b = p_xform.pos.y + p_bbox.halfSize.y - w_bbox.rect.top; // player on top
       
       Overlap overlap = {
         x_a,
@@ -375,43 +379,59 @@ void Scene_Play::sCollision() {
         y_b
       };
 
+
       // Collision resloution:
-      if ((overlap.right > 0 || overlap.left > 0) && (overlap.bottom > 0 || overlap.top > 0)) {
+      if ((overlap.right > 0 && overlap.left > 0) && (overlap.bottom > 0 && overlap.top > 0)) {
         // Both horizontal and vertical overlap happened
-        if ((overlap.right > 0 || overlap.left > 0) 
-          && overlap.bottom <= 0 
-          && overlap.top <= 0) {
-          // Horizontal overlap from either side, no vertical overlap
-          // That means player's either falling, or bumping from below
-          if (p_xform.prevPos.y > p_xform.pos.y) {
-            // Bumping from below
+        if (p_col.prevOverlap.bottom > 0 || p_col.prevOverlap.top > 0) {
+          std::cout << "Previous vertical overlap\n";
+          if (p_xform.prevPos.x > p_xform.pos.x && p_xform.prevPos.y == p_xform.pos.y) {
+            std::cout << "From right\n";
+            std::cout << "Overlap: " << overlap.right << ":" << overlap.left << ";" << overlap.bottom << ":" << overlap.top << "\n";
+            std::cout << "PrevOverlap: " << p_col.prevOverlap.right << ":" << p_col.prevOverlap.left << ";" << p_col.prevOverlap.bottom << ":" << p_col.prevOverlap.top << "\n";
+            std::cout << "prev xform: " << p_xform.prevPos.x << ":" << p_xform.prevPos.x << " current: " << p_xform.pos.x << ":" << p_xform.pos.y << "\n";
+            p_xform.pos.x += overlap.right;
+            overlap.right = 0;
+          } else if (p_xform.prevPos.x < p_xform.pos.x && p_xform.prevPos.y == p_xform.pos.y) {
+            std::cout << "From left\n";
+            std::cout << "Overlap: " << overlap.right << ":" << overlap.left << ";" << overlap.bottom << ":" << overlap.top << "\n";
+            std::cout << "PrevOverlap: " << p_col.prevOverlap.right << ":" << p_col.prevOverlap.left << ";" << p_col.prevOverlap.bottom << ":" << p_col.prevOverlap.top << "\n";
+            std::cout << "prev xform: " << p_xform.prevPos.x << ":" << p_xform.prevPos.x << " current: " << p_xform.pos.x << ":" << p_xform.pos.y << "\n";
+            p_xform.pos.x -= overlap.left;
+            overlap.left = 0;
+          } else if (p_xform.prevPos.y > p_xform.pos.y) {
+            std::cout << "From diagonal bottom\n";
             p_xform.pos.y += overlap.bottom;
             overlap.bottom = 0;
-          } else {
-            // Falling from above
+          } else if (p_xform.prevPos.y < p_xform.pos.y) {
+            std::cout << "From diagonal top\n";
             p_xform.pos.y -= overlap.top;
             overlap.top = 0;
           }
-        } else if ((overlap.bottom > 0 || overlap.top > 0)
-          && overlap.left <= 0
-          && overlap.right <= 0) {
-          // Vertical overlap on either side, no horizontal overlap
-          // Player is bumping from left or right
-          if (p_xform.prevPos.x > p_xform.pos.x) {
-            // Ramming from the right
-            p_xform.pos.x += overlap.right;
-            overlap.right = 0;
-          } else {
-            // Ramming from the left
-            p_xform.pos.x -= overlap.left;
-            overlap.left = 0;
+        }
+        if (p_col.prevOverlap.left > 0 || p_col.prevOverlap.right > 0 ) {
+          std::cout << "Prevous horizontal overlap\n";
+          if (p_xform.prevPos.y < p_xform.pos.y && p_xform.prevPos.x == p_xform.pos.x) {
+            std::cout << "From top\n";
+            std::cout << "Overlap: " << overlap.right << ":" << overlap.left << ";" << overlap.bottom << ":" << overlap.top << "\n";
+            std::cout << "PrevOverlap: " << p_col.prevOverlap.right << ":" << p_col.prevOverlap.left << ";" << p_col.prevOverlap.bottom << ":" << p_col.prevOverlap.top << "\n";
+            std::cout << "prev xform: " << p_xform.prevPos.x << ":" << p_xform.prevPos.x << " current: " << p_xform.pos.x << ":" << p_xform.pos.y << "\n";
+            p_xform.pos.y -= overlap.top;
+            overlap.top = 0;
+          } else if (p_xform.prevPos.y > p_xform.pos.y && p_xform.prevPos.x == p_xform.pos.x) {
+            std::cout << "from bottom\n";
+            std::cout << "Overlap: " << overlap.right << ":" << overlap.left << ";" << overlap.bottom << ":" << overlap.top << "\n";
+            std::cout << "PrevOverlap: " << p_col.prevOverlap.right << ":" << p_col.prevOverlap.left << ";" << p_col.prevOverlap.bottom << ":" << p_col.prevOverlap.top << "\n";
+            std::cout << "prev xform: " << p_xform.prevPos.x << ":" << p_xform.prevPos.x << " current: " << p_xform.pos.x << ":" << p_xform.pos.y << "\n";
+            p_xform.pos.y += overlap.bottom;
+            overlap.bottom = 0;
           }
-        }        
+        }
+        p_col.overlap = overlap;
       }
-      p_col.overlap = overlap;
     }
 
-    for (const std::shared_ptr<Entity> enemy : m_entities.getEntities(Tag::Enemy)) {
+    for (const std::shared_ptr<Entity> enemy : m_entities.get_entities(Tag::Enemy)) {
       const CStaticCollision & e_col = enemy->getComponent<CStaticCollision>();
       const CBoundingBox & e_bbox = enemy->getComponent<CBoundingBox>();
       if (!e_col.has || !e_bbox.has) {
