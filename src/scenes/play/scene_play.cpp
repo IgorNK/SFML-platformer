@@ -3,6 +3,8 @@
 #include <imgui-SFML.h>
 #include <imgui.h>
 #include <iostream>
+#include <map>
+#include "../../physics.h"
 
 Scene_Play::Scene_Play(GameEngine *game, const std::string &level_path)
     : Scene(game), m_levelPath(level_path) {
@@ -357,7 +359,8 @@ void Scene_Play::sCollision() {
       std::cerr << "Player doesn't have required collision\n";
       continue;
     }
-    p_col.prevOverlap = p_col.overlap;
+
+    std::map<float, std::tuple<size_t, Overlap, sf::IntRect, CStaticCollision>> static_overlaps;
 
     // Collision detection:
     for (const std::shared_ptr<Entity> wall : m_entities.get_entities(Tag::StaticCollision)) {
@@ -367,6 +370,11 @@ void Scene_Play::sCollision() {
         std::cerr << "Static collision doesn't have required components\n";
         continue;
       }
+      int w_radius = std::max(w_bbox.halfSize.x, w_bbox.halfSize.y);
+      Vec2 w_center = {w_bbox.rect.left + w_bbox.halfSize.x, w_bbox.rect.top + w_bbox.halfSize.y};
+      int p_radius = std::max(p_bbox.halfSize.x, p_bbox.halfSize.y);
+      float distance = p_xform.pos.distance_to(w_center) - w_radius - p_radius;
+
       float x_a = w_bbox.rect.left + w_bbox.rect.width - (p_xform.pos.x - p_bbox.halfSize.x); // Player to the right
       float x_b = p_xform.pos.x + p_bbox.halfSize.x - w_bbox.rect.left; // player to the left
       float y_a = w_bbox.rect.top  + w_bbox.rect.height - ( p_xform.pos.y - p_bbox.halfSize.y); // player below
@@ -379,57 +387,15 @@ void Scene_Play::sCollision() {
         y_b
       };
 
-
-      // Collision resloution:
-      if ((overlap.right > 0 && overlap.left > 0) && (overlap.bottom > 0 && overlap.top > 0)) {
-        // Both horizontal and vertical overlap happened
-        if (p_col.prevOverlap.bottom > 0 || p_col.prevOverlap.top > 0) {
-          std::cout << "Previous vertical overlap\n";
-          if (p_xform.prevPos.x > p_xform.pos.x && p_xform.prevPos.y == p_xform.pos.y) {
-            std::cout << "From right\n";
-            std::cout << "Overlap: " << overlap.right << ":" << overlap.left << ";" << overlap.bottom << ":" << overlap.top << "\n";
-            std::cout << "PrevOverlap: " << p_col.prevOverlap.right << ":" << p_col.prevOverlap.left << ";" << p_col.prevOverlap.bottom << ":" << p_col.prevOverlap.top << "\n";
-            std::cout << "prev xform: " << p_xform.prevPos.x << ":" << p_xform.prevPos.x << " current: " << p_xform.pos.x << ":" << p_xform.pos.y << "\n";
-            p_xform.pos.x += overlap.right;
-            overlap.right = 0;
-          } else if (p_xform.prevPos.x < p_xform.pos.x && p_xform.prevPos.y == p_xform.pos.y) {
-            std::cout << "From left\n";
-            std::cout << "Overlap: " << overlap.right << ":" << overlap.left << ";" << overlap.bottom << ":" << overlap.top << "\n";
-            std::cout << "PrevOverlap: " << p_col.prevOverlap.right << ":" << p_col.prevOverlap.left << ";" << p_col.prevOverlap.bottom << ":" << p_col.prevOverlap.top << "\n";
-            std::cout << "prev xform: " << p_xform.prevPos.x << ":" << p_xform.prevPos.x << " current: " << p_xform.pos.x << ":" << p_xform.pos.y << "\n";
-            p_xform.pos.x -= overlap.left;
-            overlap.left = 0;
-          } else if (p_xform.prevPos.y > p_xform.pos.y) {
-            std::cout << "From diagonal bottom\n";
-            p_xform.pos.y += overlap.bottom;
-            overlap.bottom = 0;
-          } else if (p_xform.prevPos.y < p_xform.pos.y) {
-            std::cout << "From diagonal top\n";
-            p_xform.pos.y -= overlap.top;
-            overlap.top = 0;
-          }
+      if (distance < p_col.distance) {
+        if (static_overlaps.find(distance) != static_overlaps.end()) {
+          std::cerr << "Overlap with equal distance already exists!\n"; 
         }
-        if (p_col.prevOverlap.left > 0 || p_col.prevOverlap.right > 0 ) {
-          std::cout << "Prevous horizontal overlap\n";
-          if (p_xform.prevPos.y < p_xform.pos.y && p_xform.prevPos.x == p_xform.pos.x) {
-            std::cout << "From top\n";
-            std::cout << "Overlap: " << overlap.right << ":" << overlap.left << ";" << overlap.bottom << ":" << overlap.top << "\n";
-            std::cout << "PrevOverlap: " << p_col.prevOverlap.right << ":" << p_col.prevOverlap.left << ";" << p_col.prevOverlap.bottom << ":" << p_col.prevOverlap.top << "\n";
-            std::cout << "prev xform: " << p_xform.prevPos.x << ":" << p_xform.prevPos.x << " current: " << p_xform.pos.x << ":" << p_xform.pos.y << "\n";
-            p_xform.pos.y -= overlap.top;
-            overlap.top = 0;
-          } else if (p_xform.prevPos.y > p_xform.pos.y && p_xform.prevPos.x == p_xform.pos.x) {
-            std::cout << "from bottom\n";
-            std::cout << "Overlap: " << overlap.right << ":" << overlap.left << ";" << overlap.bottom << ":" << overlap.top << "\n";
-            std::cout << "PrevOverlap: " << p_col.prevOverlap.right << ":" << p_col.prevOverlap.left << ";" << p_col.prevOverlap.bottom << ":" << p_col.prevOverlap.top << "\n";
-            std::cout << "prev xform: " << p_xform.prevPos.x << ":" << p_xform.prevPos.x << " current: " << p_xform.pos.x << ":" << p_xform.pos.y << "\n";
-            p_xform.pos.y += overlap.bottom;
-            overlap.bottom = 0;
-          }
-        }
-        p_col.overlap = overlap;
+        static_overlaps[distance] = std::make_tuple(wall->id(), overlap, w_bbox.rect, w_col);
       }
     }
+
+    resolve_collision(p_col, p_bbox, p_xform, static_overlaps);
 
     for (const std::shared_ptr<Entity> enemy : m_entities.get_entities(Tag::Enemy)) {
       const CStaticCollision & e_col = enemy->getComponent<CStaticCollision>();

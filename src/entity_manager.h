@@ -9,7 +9,7 @@ typedef std::vector<std::shared_ptr<Entity>> Entities;
 class EntityManager {
 	Entities m_entities {};    
 	Entities m_scheduled {};
-	std::map<Tag, Entities> m_tag_entities {};
+	std::unordered_map<Tag, Entities> m_tag_entities {};
 	size_t m_entity_count = 0;
 	Entities m_to_add {};
 public:

@@ -7,7 +7,7 @@ protected:
     GameEngine* m_game;
     EntityManager m_entities {};
     int m_currentFrame {0};
-    std::map<int, std::string> m_actionMap {};
+    std::unordered_map<int, std::string> m_actionMap {};
     // Booleans
     bool m_paused {false};
     bool m_hasEnded {false};
@@ -24,5 +24,5 @@ public:
     void simulate(int);
     void doAction(const Action & action);
     void registerAction(const int key_code, const std::string & action_name);
-    const std::map<int, std::string> & getActionMap() const;
+    const std::unordered_map<int, std::string> & getActionMap() const;
 };

@@ -6,7 +6,7 @@
 
 class Scene;
 
-typedef std::map<std::string, std::map<std::string, std::string>> Config;
+typedef std::unordered_map<std::string, std::unordered_map<std::string, std::string>> Config;
 
 class GameEngine {
   // Window init
@@ -32,7 +32,7 @@ class GameEngine {
 
   // Private member variables
   sf::RenderWindow m_window;
-  std::map<std::string, std::shared_ptr<Scene>> m_scenes;
+  std::unordered_map<std::string, std::shared_ptr<Scene>> m_scenes;
   std::shared_ptr<Scene> m_currentScene;
   Assets m_assets{};
   std::string m_currentSceneName{};

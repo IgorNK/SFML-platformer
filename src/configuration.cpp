@@ -5,7 +5,7 @@
 void GameEngine::test_config(Config &config) const {
 	std::for_each(
     config.begin(), config.end(),
-    [](std::pair<std::string, std::map<std::string, std::string>> p) {
+    [](std::pair<std::string, std::unordered_map<std::string, std::string>> p) {
         std::cout << "Heading: " << p.first << '\n';
         std::for_each(p.second.begin(), p.second.end(),
         [](std::pair<std::string, std::string> v) {
@@ -171,7 +171,7 @@ void GameEngine::export_config(
 
 	std::for_each(
         config.begin(), config.end(),
-        [&](std::pair<std::string, std::map<std::string, std::string>> p) {
+        [&](std::pair<std::string, std::unordered_map<std::string, std::string>> p) {
             file << p.first << " [\n";
             std::for_each(p.second.begin(), p.second.end(),
             [&](std::pair<std::string, std::string> v) {

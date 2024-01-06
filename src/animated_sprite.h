@@ -14,7 +14,7 @@ class AnimatedSprite {
   bool m_paused{true};
   bool m_hasEnded{false};
   std::string m_currentAnimation{"None"};
-  std::map<std::string, std::vector<sf::IntRect>> m_animations;
+  std::unordered_map<std::string, std::vector<sf::IntRect>> m_animations;
   Vec2 m_size;
   Vec2 m_imageSize;
   bool m_repeat{false};

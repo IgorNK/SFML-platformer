@@ -1,6 +1,7 @@
 #pragma once
 #include "animated_sprite.h"
 #include "vec2.h"
+#include "flags.h"
 
 class Component {
 public:
@@ -11,6 +12,7 @@ class CTransform : public Component {
 public:
   Vec2 pos = {0.f, 0.f};
   Vec2 prevPos = {0.f, 0.f};
+  bool skipPrevPosition = false;
   Vec2 scale = {1.f, 1.f};
   float angle = 0;
   CTransform() {}
@@ -66,8 +68,10 @@ public:
   ~CInput() {}
 };
 
+
 class CStaticCollision : public Component {
 public:
+  EStaticCollisionDirection direction;
   CStaticCollision(){}
   ~CStaticCollision(){}
 };
@@ -81,8 +85,9 @@ struct Overlap {
 
 class CDynamicCollision : public Component {
 public:
-  Overlap overlap {0, 0, 0, 0};
-  Overlap prevOverlap {-1, -1, -1, -1};
+  float distance {100};
+  int maxColliders {12};
+  std::unordered_map<size_t, Overlap> prevOverlap {};
   CDynamicCollision(){}
   ~CDynamicCollision(){}
 };

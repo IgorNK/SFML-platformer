@@ -3,15 +3,15 @@
 #include <SFML/Graphics/Texture.hpp>
 #include <fstream>
 #include <iostream>
-#include <map>
+#include <unordered_map>
 #include <string>
 
-typedef std::multimap<std::string, std::map<std::string, std::string>>
+typedef std::multimap<std::string, std::unordered_map<std::string, std::string>>
     AssetData;
 
 class Assets {
-  std::map<std::string, sf::Texture> m_textures;
-  std::map<std::string, sf::Font> m_fonts;
+  std::unordered_map<std::string, sf::Texture> m_textures;
+  std::unordered_map<std::string, sf::Font> m_fonts;
 
 public:
   Assets() : m_textures{}, m_fonts{} {}
@@ -113,7 +113,7 @@ private:
     std::string heading = "";
     AssetData data;
     std::string key, value;
-    std::map<std::string, std::string> current_data;
+    std::unordered_map<std::string, std::string> current_data;
     for (std::string token : tokenstream) {
 
       std::string::size_type begin = token.find_first_not_of(" ,[\"\f\t\v");
@@ -167,7 +167,7 @@ private:
   void test_data(AssetData &data) {
     std::for_each(
         data.begin(), data.end(),
-        [](std::pair<std::string, std::map<std::string, std::string>> p) {
+        [](std::pair<std::string, std::unordered_map<std::string, std::string>> p) {
           std::cout << "Heading: " << p.first << '\n';
           std::for_each(p.second.begin(), p.second.end(),
                         [](std::pair<std::string, std::string> v) {

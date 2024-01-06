@@ -18,7 +18,7 @@ class Scene_Play : public Scene {
   TileMap m_tilemap;
   size_t m_frameCount;
 
-  bool m_sDebugCollision{false};
+  bool m_sDebugCollision{true};
   bool m_sDebugGrid{false};
   bool m_sRenderMap{true};
 

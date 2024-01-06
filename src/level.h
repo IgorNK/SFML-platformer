@@ -8,6 +8,7 @@
 #include <limits.h>
 #include <optional>
 #include <vector>
+#include "flags.h"
 
 enum SNAP_POSITION {
   SNAP_CENTER,
@@ -293,6 +294,36 @@ public:
       throw std::runtime_error("getIndexCoords: index at requested coords [" + std::to_string(x) + ":" + std::to_string(y) + " is too high: " + std::to_string(index));
     }
     return index;
+  }
+
+  int getLeftNeighbour(const int index) const {
+    if (index > m_tiles.size() - 1) {
+      throw std::runtime_error("getLeftNeighbour pre-condition: index too high: " + std::to_string(index) + " / " + std::to_string(m_tiles.size() - 1));
+    }
+    if (index % (int)m_dimensions.x > 1 && index > 0) {
+      int n_i = index - 1;
+      if (n_i > m_tiles.size() - 1) {
+        throw std::runtime_error("getLeftNeighbour execution: index too high: " + std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
+      }
+      return n_i;
+    }
+
+    return -1;
+  }
+
+  int getRightNeighbour(const int index) const {
+    if (index > m_tiles.size() - 1) {
+      throw std::runtime_error("getRightNeighbour pre-condition: index too high: " + std::to_string(index) + " / " + std::to_string(m_tiles.size() - 1));
+    }
+    if ((index % (int)m_dimensions.x < m_dimensions.x - 1) 
+      && (index < m_tiles.size() - 1)) {
+      int n_i = index + 1;
+      if (n_i > m_tiles.size() - 1) {
+        throw std::runtime_error("getRightNeighbour execution: index too high: " + std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
+      }
+      return n_i;
+    }
+    return -1;
   }
 
   std::vector<int> getNeighbours(const int index,
@@ -998,6 +1029,36 @@ public:
       ));
     }
     return int_rects;
+  }
+
+  const std::vector<int> getOccupiedTiles(const sf::IntRect & collision_shape) const {
+    // Pre-requisite: shape must be a rectangle, absolutely positioned in game world
+    std::vector<int> tiles = {};
+    sf::IntRect bounds = {
+      std::round(collision_shape.left / m_tileset.tileWidth),
+      std::round(collision_shape.top / m_tileset.tileHeight),
+      std::round(collision_shape.width / m_tileset.tileWidth),
+      std::round(collision_shape.height / m_tileset.tileHeight)
+    };
+    for (int i = bounds.left; i < bounds.left + bounds.width; ++i) {
+      for (int j = bounds.top; j < bounds.top + bounds.height; ++i) {
+        int index = getIndexAtCoords(i, j);
+        if (index > m_tiles.size() - 1) {
+          throw std::runtime_error(
+              "getOccupiedTiles result: Tile index too high: " +
+              std::to_string(index));
+        }
+        tiles.push_back(index);
+      }
+    }
+    return tiles;
+  }
+
+  const EStaticCollisionDirection getCollisionDirection(const sf::IntRect & collision_shape) const {
+    EStaticCollisionDirection direction;
+    for (const int tile : getOccupiedTiles(collision_shape)) {
+
+    }
   }
 
   const Vec2 &getDimensions() const { return m_dimensions; }
