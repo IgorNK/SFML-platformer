@@ -216,11 +216,10 @@ void Scene_Play::sInputHandling() {
     }
 
     // Velocity
-    // if ((std::abs(input.axis.x) > 0 || std::abs(input.axis.y) > 0) &&
-    //     vel.currentSpeed < vel.maxSpeed && vel.currentSpeed > -vel.maxSpeed)
-    //     {
-    //   vel.currentSpeed += vel.acceleration;
-    // }
+    if ((std::abs(input.axis.x) > 0 || std::abs(input.axis.y) > 0) &&
+        vel.currentSpeed < vel.maxYSpeed && vel.currentSpeed > -vel.maxYSpeed) {
+      vel.currentSpeed += vel.acceleration;
+    }
     if ((std::abs(input.axis.x) > 0) &&
         vel.currentSpeed<vel.maxXSpeed & vel.currentSpeed> - vel.maxXSpeed) {
       vel.currentSpeed += vel.acceleration;
@@ -437,14 +436,14 @@ void Scene_Play::sCollision() {
       int p_radius = std::max(p_bbox.halfSize.x, p_bbox.halfSize.y);
       float distance = p_xform.pos.distance_to(w_center) - w_radius - p_radius;
 
-      float x_a = w_bbox.rect.left + w_bbox.rect.width -
+      float x_a = (float)w_bbox.rect.left + w_bbox.rect.width -
                   (p_xform.pos.x - p_bbox.halfSize.x); // Player to the right
-      float x_b = p_xform.pos.x + p_bbox.halfSize.x -
+      float x_b = (float)p_xform.pos.x + p_bbox.halfSize.x -
                   w_bbox.rect.left; // player to the left
-      float y_a = w_bbox.rect.top + w_bbox.rect.height -
+      float y_a = (float)w_bbox.rect.top + w_bbox.rect.height -
                   (p_xform.pos.y - p_bbox.halfSize.y); // player below
-      float y_b =
-          p_xform.pos.y + p_bbox.halfSize.y - w_bbox.rect.top; // player on top
+      float y_b = (float)p_xform.pos.y + p_bbox.halfSize.y -
+                  w_bbox.rect.top; // player on top
 
       Overlap overlap = {x_a, x_b, y_a, y_b};
 
