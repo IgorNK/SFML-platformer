@@ -45,4 +45,5 @@ public:
   void sDebug();
   std::vector<DebugCell> spawn_grid(const Vec2 &size, const Vec2 &grid_size);
   void sCollision();
+  void sGravity();
 };

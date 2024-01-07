@@ -30,7 +30,7 @@ Level [
 19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19
 ]
 Entities [   
-  id="5" name="PlayerStart" type="EntitySpawn" x="592" y="315.5">
+  id="5" name="PlayerStart" type="EntitySpawn" x="592" y="305.5">
   id="6" name="CoinBrick" type="EntitySpawn" x="336" y="304"/>
   id="7" name="Spikes" type="EntitySpawn" x="520" y="496"/>
   id="8" name="Exit" type="EntitySpawn" x="1000" y="496"/>

@@ -1,10 +1,10 @@
 #include "scene_play.h"
 #include "../../component.h"
+#include "../../physics.h"
 #include <imgui-SFML.h>
 #include <imgui.h>
 #include <iostream>
 #include <map>
-#include "../../physics.h"
 
 Scene_Play::Scene_Play(GameEngine *game, const std::string &level_path)
     : Scene(game), m_levelPath(level_path) {
@@ -14,6 +14,7 @@ Scene_Play::Scene_Play(GameEngine *game, const std::string &level_path)
 void Scene_Play::update() {
   m_entities.update();
   sUserInput();
+  sGravity();
   sInputHandling();
   sMovement();
   sCollision();
@@ -30,7 +31,6 @@ void Scene_Play::init() {
     std::cerr << "Failed to load font " << font_path << std::endl;
     return;
   }
-
 
   if (!m_level.load_file(m_levelPath)) {
     std::cerr << "Scene failed to initialize, couldn't load " << m_levelPath
@@ -62,8 +62,8 @@ void Scene_Play::init() {
 
   register_input();
 
-  
-  m_view = sf::View(sf::Vector2f(0, 0), (sf::Vector2f)m_game->getWindow().getSize());
+  m_view =
+      sf::View(sf::Vector2f(0, 0), (sf::Vector2f)m_game->getWindow().getSize());
   m_game->getWindow().setView(m_view);
 }
 
@@ -71,12 +71,11 @@ void Scene_Play::sCamera() {
   if (!m_player) {
     return;
   }
-  CTransform & xform = m_player->getComponent<CTransform>();
+  CTransform &xform = m_player->getComponent<CTransform>();
   if (xform.has) {
     Vec2 levelSize = {
-      m_level.getDimensions().x * m_level.getTileset().tileWidth,
-      m_level.getDimensions().y * m_level.getTileset().tileHeight
-    };
+        m_level.getDimensions().x * m_level.getTileset().tileWidth,
+        m_level.getDimensions().y * m_level.getTileset().tileHeight};
     Vec2 playerPos = xform.pos;
     sf::Vector2f viewSize = m_view.getSize();
     if (playerPos.x - viewSize.x / 2 < 0) {
@@ -113,6 +112,9 @@ void Scene_Play::sDoAction(const Action &action) {
     } else if (action.name() == "UP") {
     } else if (action.name() == "USE") {
     } else if (action.name() == "JUMP") {
+      if (m_player && m_player->getComponent<CInput>().has) {
+        m_player->getComponent<CInput>().jump = false;
+      }
     }
   } else if (action.type() == "START") {
     if (action.name() == "LEFT") {
@@ -120,6 +122,11 @@ void Scene_Play::sDoAction(const Action &action) {
     } else if (action.name() == "UP") {
     } else if (action.name() == "USE") {
     } else if (action.name() == "JUMP") {
+      std::cout << "jump start\n";
+      if (m_player && m_player->getComponent<CInput>().has) {
+        m_player->getComponent<CInput>().jump = true;
+        std::cout << "jump start communicated to CInput\n";
+      }
     } else if (action.name() == "MENU") {
       onEnd();
     }
@@ -170,6 +177,7 @@ void Scene_Play::sInputHandling() {
       m_player->hasComponent<CVelocity>()) {
     CInput &input = m_player->getComponent<CInput>();
     CVelocity &vel = m_player->getComponent<CVelocity>();
+    const CDynamicCollision &col = m_player->getComponent<CDynamicCollision>();
     // Zeroing
     if (std::abs(vel.velocity.x) <= vel.margin) {
       vel.velocity.x = 0;
@@ -192,30 +200,37 @@ void Scene_Play::sInputHandling() {
     }
 
     // Clamping
-    if (vel.velocity.x > vel.maxSpeed) {
-      vel.velocity.x = vel.maxSpeed;
+    // std::clamp(vel.velocity.x, -vel.maxXSpeed, vel.maxXSpeed);
+    // std::clamp(vel.velocity.y, -vel.maxYSpeed, vel.maxYSpeed);
+    if (vel.velocity.x > vel.maxXSpeed) {
+      vel.velocity.x = vel.maxXSpeed;
     }
-    if (vel.velocity.x < -vel.maxSpeed) {
-      vel.velocity.x = -vel.maxSpeed;
+    if (vel.velocity.x < -vel.maxXSpeed) {
+      vel.velocity.x = -vel.maxXSpeed;
     }
-    if (vel.velocity.y > vel.maxSpeed) {
-      vel.velocity.y = vel.maxSpeed;
+    if (vel.velocity.y > vel.maxYSpeed) {
+      vel.velocity.y = vel.maxYSpeed;
     }
-    if (vel.velocity.y < -vel.maxSpeed) {
-      vel.velocity.y = -vel.maxSpeed;
+    if (vel.velocity.y < -vel.maxYSpeed) {
+      vel.velocity.y = -vel.maxYSpeed;
     }
 
     // Velocity
-    if ((std::abs(input.axis.x) > 0 || std::abs(input.axis.y) > 0) &&
-        vel.currentSpeed < vel.maxSpeed && vel.currentSpeed > -vel.maxSpeed) {
+    // if ((std::abs(input.axis.x) > 0 || std::abs(input.axis.y) > 0) &&
+    //     vel.currentSpeed < vel.maxSpeed && vel.currentSpeed > -vel.maxSpeed)
+    //     {
+    //   vel.currentSpeed += vel.acceleration;
+    // }
+    if ((std::abs(input.axis.x) > 0) &&
+        vel.currentSpeed<vel.maxXSpeed & vel.currentSpeed> - vel.maxXSpeed) {
       vel.currentSpeed += vel.acceleration;
     }
 
-    if (vel.currentSpeed > vel.maxSpeed) {
-      vel.currentSpeed = vel.maxSpeed;
+    if (vel.currentSpeed > vel.maxXSpeed) {
+      vel.currentSpeed = vel.maxXSpeed;
     }
-    if (vel.currentSpeed < -vel.maxSpeed) {
-      vel.currentSpeed = -vel.maxSpeed;
+    if (vel.currentSpeed < -vel.maxXSpeed) {
+      vel.currentSpeed = -vel.maxXSpeed;
     }
 
     if (input.directionChanged || input.axis.length() == 0) {
@@ -223,6 +238,32 @@ void Scene_Play::sInputHandling() {
     }
 
     vel.velocity += input.axis * vel.currentSpeed;
+
+    // Jumping
+    if (col.touchedGround) {
+      input.jumpCountdown = input.jumpDuration;
+    }
+
+    if (input.jump && input.jumpCountdown >= 0) {
+      std::cout << "Jump" << std::endl;
+      --input.jumpCountdown;
+      vel.velocity.y -= vel.jumpForce;
+    }
+  }
+}
+
+void Scene_Play::sGravity() {
+  for (const std::shared_ptr<Entity> e : m_entities.get_entities()) {
+    const CGravity &gravity = e->getComponent<CGravity>();
+    const CDynamicCollision &collision = e->getComponent<CDynamicCollision>();
+    CVelocity &velocity = e->getComponent<CVelocity>();
+    if (!velocity.has || !gravity.has) {
+      return;
+    }
+    velocity.velocity.y += gravity.acceleration;
+    if (collision.has && collision.touchedGround) {
+      velocity.velocity.y = 0;
+    }
   }
 }
 
@@ -262,6 +303,7 @@ void Scene_Play::spawn_player(Vec2 position, bool snap_to_grid) {
                                        p_sprite.getSize().y);
   m_player->addComponent<CDynamicCollision>();
   m_player->addComponent<CInput>();
+  m_player->addComponent<CGravity>();
 }
 
 void Scene_Play::spawn_collision(const Level &level) {
@@ -271,11 +313,13 @@ void Scene_Play::spawn_collision(const Level &level) {
   int height = level.getDimensions().y;
   const std::vector<sf::IntRect> edges = level.getEdgeBounds();
   // const std::vector<int> edge_cells = level.getEdges();
-  // const std::vector<sf::IntRect> edges = level.getCombinedColliders(edge_cells);
+  // const std::vector<sf::IntRect> edges =
+  // level.getCombinedColliders(edge_cells);
   for (const sf::IntRect &rect : edges) {
     const auto collision = m_entities.add_entity(Tag::StaticCollision);
     collision->addComponent<CBoundingBox>(rect);
-    collision->addComponent<CStaticCollision>();
+    collision->addComponent<CStaticCollision>(
+        m_level.getCollisionDirection(rect));
   }
 }
 
@@ -352,58 +396,67 @@ void Scene_Play::sMovement() {
 
 void Scene_Play::sCollision() {
   for (const std::shared_ptr<Entity> p : m_entities.get_entities(Tag::Player)) {
-    CDynamicCollision & p_col = p->getComponent<CDynamicCollision>();
-    const CBoundingBox & p_bbox = p->getComponent<CBoundingBox>();
-    CTransform & p_xform = p->getComponent<CTransform>();
+    CDynamicCollision &p_col = p->getComponent<CDynamicCollision>();
+    const CBoundingBox &p_bbox = p->getComponent<CBoundingBox>();
+    CTransform &p_xform = p->getComponent<CTransform>();
     if (!p_col.has || !p_bbox.has || !p_xform.has) {
       std::cerr << "Player doesn't have required collision\n";
       continue;
     }
 
-    std::map<float, std::tuple<size_t, Overlap, sf::IntRect, CStaticCollision>> static_overlaps;
+    std::map<float, std::tuple<size_t, Overlap, sf::IntRect, CStaticCollision>>
+        static_overlaps;
 
     // Collision detection:
-    for (const std::shared_ptr<Entity> wall : m_entities.get_entities(Tag::StaticCollision)) {
-      const CStaticCollision & w_col = wall->getComponent<CStaticCollision>();
-      const CBoundingBox & w_bbox = wall->getComponent<CBoundingBox>();
+    for (const std::shared_ptr<Entity> wall :
+         m_entities.get_entities(Tag::StaticCollision)) {
+      const CStaticCollision &w_col = wall->getComponent<CStaticCollision>();
+      const CBoundingBox &w_bbox = wall->getComponent<CBoundingBox>();
       if (!w_col.has || !w_bbox.has) {
         std::cerr << "Static collision doesn't have required components\n";
         continue;
       }
       int w_radius = std::max(w_bbox.halfSize.x, w_bbox.halfSize.y);
-      Vec2 w_center = {w_bbox.rect.left + w_bbox.halfSize.x, w_bbox.rect.top + w_bbox.halfSize.y};
+      Vec2 w_center = {w_bbox.rect.left + w_bbox.halfSize.x,
+                       w_bbox.rect.top + w_bbox.halfSize.y};
       int p_radius = std::max(p_bbox.halfSize.x, p_bbox.halfSize.y);
       float distance = p_xform.pos.distance_to(w_center) - w_radius - p_radius;
 
-      float x_a = w_bbox.rect.left + w_bbox.rect.width - (p_xform.pos.x - p_bbox.halfSize.x); // Player to the right
-      float x_b = p_xform.pos.x + p_bbox.halfSize.x - w_bbox.rect.left; // player to the left
-      float y_a = w_bbox.rect.top  + w_bbox.rect.height - ( p_xform.pos.y - p_bbox.halfSize.y); // player below
-      float y_b = p_xform.pos.y + p_bbox.halfSize.y - w_bbox.rect.top; // player on top
-      
-      Overlap overlap = {
-        x_a,
-        x_b,
-        y_a,
-        y_b
-      };
+      float x_a = w_bbox.rect.left + w_bbox.rect.width -
+                  (p_xform.pos.x - p_bbox.halfSize.x); // Player to the right
+      float x_b = p_xform.pos.x + p_bbox.halfSize.x -
+                  w_bbox.rect.left; // player to the left
+      float y_a = w_bbox.rect.top + w_bbox.rect.height -
+                  (p_xform.pos.y - p_bbox.halfSize.y); // player below
+      float y_b =
+          p_xform.pos.y + p_bbox.halfSize.y - w_bbox.rect.top; // player on top
+
+      Overlap overlap = {x_a, x_b, y_a, y_b};
 
       if (distance < p_col.distance) {
         if (static_overlaps.find(distance) != static_overlaps.end()) {
-          std::cerr << "Overlap with equal distance already exists!\n"; 
+          // std::cerr << "Overlap with equal distance already exists: "
+          //           << distance << "\n";
+          while (static_overlaps.find(distance) != static_overlaps.end()) {
+            float rand_dist = (float)(rand()) / (float)RAND_MAX;
+            distance += rand_dist;
+          }
+          // std::cerr << "Adjusting by random value: " << distance << "\n";
         }
-        static_overlaps[distance] = std::make_tuple(wall->id(), overlap, w_bbox.rect, w_col);
+        static_overlaps[distance] =
+            std::make_tuple(wall->id(), overlap, w_bbox.rect, w_col);
       }
     }
 
     resolve_collision(p_col, p_bbox, p_xform, static_overlaps);
 
-    for (const std::shared_ptr<Entity> enemy : m_entities.get_entities(Tag::Enemy)) {
-      const CStaticCollision & e_col = enemy->getComponent<CStaticCollision>();
-      const CBoundingBox & e_bbox = enemy->getComponent<CBoundingBox>();
+    for (const std::shared_ptr<Entity> enemy :
+         m_entities.get_entities(Tag::Enemy)) {
+      const CStaticCollision &e_col = enemy->getComponent<CStaticCollision>();
+      const CBoundingBox &e_bbox = enemy->getComponent<CBoundingBox>();
       if (!e_col.has || !e_bbox.has) {
         continue;
       }
-
     }
   }
 }
@@ -427,6 +480,9 @@ void Scene_Play::sDebug() {
       ImGui::InputFloat2("axis", axis);
       ImGui::InputFloat2("prevAxis", prevAxis);
       ImGui::Checkbox("directionChanged", &input.directionChanged);
+      ImGui::Checkbox("jump", &input.jump);
+      ImGui::InputInt("jumpDuration", &input.jumpDuration);
+      ImGui::InputInt("jumpCountdown", &input.jumpCountdown);
     }
     if (xform.has) {
       float pos[2] = {xform.pos.x, xform.pos.y};
@@ -439,11 +495,13 @@ void Scene_Play::sDebug() {
       float velocity[2] = {vel.velocity.x, vel.velocity.y};
       ImGui::SeparatorText("Player velocity");
       ImGui::InputFloat2("velocity", velocity);
-      ImGui::InputFloat("maxSpeed", &vel.maxSpeed, 0.01f, 0.1f);
+      ImGui::InputFloat("maxXSpeed", &vel.maxXSpeed, 0.01f, 0.1f);
+      ImGui::InputFloat("maxYSpeed", &vel.maxYSpeed, 0.01f, 0.1f);
       ImGui::InputFloat("currentSpeed", &vel.currentSpeed);
       ImGui::InputFloat("acceleration", &vel.acceleration, 0.01f, 0.1f);
       ImGui::InputFloat("deceleration", &vel.deceleration, 0.01f, 0.1f);
       ImGui::InputFloat("margin", &vel.margin, 0.01f, 0.1f);
+      ImGui::InputFloat("jumpForce", &vel.jumpForce, 0.01f, 0.1f);
     }
   }
   ImGui::EndChild();

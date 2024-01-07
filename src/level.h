@@ -1,6 +1,7 @@
 #pragma once
 #include "SFML/Graphics/Rect.hpp"
 #include "animated_sprite.h"
+#include "flags.h"
 #include "tileset.h"
 #include <algorithm>
 #include <fstream>
@@ -8,7 +9,6 @@
 #include <limits.h>
 #include <optional>
 #include <vector>
-#include "flags.h"
 
 enum SNAP_POSITION {
   SNAP_CENTER,
@@ -291,35 +291,80 @@ public:
   const int getIndexAtCoords(const int x, const int y) const {
     const int index = y * m_dimensions.x + x;
     if (index > m_tiles.size() - 1) {
-      throw std::runtime_error("getIndexCoords: index at requested coords [" + std::to_string(x) + ":" + std::to_string(y) + " is too high: " + std::to_string(index));
+      throw std::runtime_error("getIndexCoords: index at requested coords [" +
+                               std::to_string(x) + ":" + std::to_string(y) +
+                               " is too high: " + std::to_string(index));
     }
     return index;
   }
 
   int getLeftNeighbour(const int index) const {
     if (index > m_tiles.size() - 1) {
-      throw std::runtime_error("getLeftNeighbour pre-condition: index too high: " + std::to_string(index) + " / " + std::to_string(m_tiles.size() - 1));
+      throw std::runtime_error(
+          "getLeftNeighbour pre-condition: index too high: " +
+          std::to_string(index) + " / " + std::to_string(m_tiles.size() - 1));
     }
     if (index % (int)m_dimensions.x > 1 && index > 0) {
       int n_i = index - 1;
       if (n_i > m_tiles.size() - 1) {
-        throw std::runtime_error("getLeftNeighbour execution: index too high: " + std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
+        throw std::runtime_error(
+            "getLeftNeighbour execution: index too high: " +
+            std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
       }
       return n_i;
     }
-
     return -1;
   }
 
   int getRightNeighbour(const int index) const {
     if (index > m_tiles.size() - 1) {
-      throw std::runtime_error("getRightNeighbour pre-condition: index too high: " + std::to_string(index) + " / " + std::to_string(m_tiles.size() - 1));
+      throw std::runtime_error(
+          "getRightNeighbour pre-condition: index too high: " +
+          std::to_string(index) + " / " + std::to_string(m_tiles.size() - 1));
     }
-    if ((index % (int)m_dimensions.x < m_dimensions.x - 1) 
-      && (index < m_tiles.size() - 1)) {
+    if ((index % (int)m_dimensions.x < m_dimensions.x - 1) &&
+        (index < m_tiles.size() - 1)) {
       int n_i = index + 1;
       if (n_i > m_tiles.size() - 1) {
-        throw std::runtime_error("getRightNeighbour execution: index too high: " + std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
+        throw std::runtime_error(
+            "getRightNeighbour execution: index too high: " +
+            std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
+      }
+      return n_i;
+    }
+    return -1;
+  }
+
+  int getTopNeighbour(const int index) const {
+    if (index > m_tiles.size() - 1) {
+      throw std::runtime_error(
+          "getTopNeighbour pre-condition: index too high: " +
+          std::to_string(index) + " / " + std::to_string(m_tiles.size() - 1));
+    }
+    if (index - m_dimensions.x > 0) {
+      int n_i = index - m_dimensions.x;
+      if (n_i > m_tiles.size() - 1) {
+        throw std::runtime_error("getTopNeighbour execution: index too high: " +
+                                 std::to_string(n_i) + " / " +
+                                 std::to_string(m_tiles.size() - 1));
+      }
+      return n_i;
+    }
+    return -1;
+  }
+
+  int getBottomNeighbour(const int index) const {
+    if (index > m_tiles.size() - 1) {
+      throw std::runtime_error(
+          "getBottomNeighbour pre-condition: index too high: " +
+          std::to_string(index) + " / " + std::to_string(m_tiles.size() - 1));
+    }
+    if (index + m_dimensions.x < m_tiles.size()) {
+      int n_i = index + m_dimensions.x;
+      if (n_i > m_tiles.size() - 1) {
+        throw std::runtime_error(
+            "getBottomNeighbour execution: index too high: " +
+            std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
       }
       return n_i;
     }
@@ -329,45 +374,54 @@ public:
   std::vector<int> getNeighbours(const int index,
                                  bool include_diagonals = false) const {
     if (index > m_tiles.size() - 1) {
-      throw std::runtime_error("getNeighbours pre-condition: index too high: " + std::to_string(index) + " / " + std::to_string(m_tiles.size() - 1));
+      throw std::runtime_error("getNeighbours pre-condition: index too high: " +
+                               std::to_string(index) + " / " +
+                               std::to_string(m_tiles.size() - 1));
     }
     std::vector<int> neighbours;
     // top
     if (index - m_dimensions.x > 0) {
       int n_i = index - m_dimensions.x;
       if (n_i > m_tiles.size() - 1) {
-        throw std::runtime_error("getNeighbours execution top: index too high: " + std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
+        throw std::runtime_error(
+            "getNeighbours execution top: index too high: " +
+            std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
       }
       neighbours.push_back(n_i);
     }
     // top right
-    if (include_diagonals 
-      && (index - m_dimensions.x > 0) 
-      && (index % (int)m_dimensions.x < m_dimensions.x - 1) 
-      && (index < m_tiles.size() - 1)) {
+    if (include_diagonals && (index - m_dimensions.x > 0) &&
+        (index % (int)m_dimensions.x < m_dimensions.x - 1) &&
+        (index < m_tiles.size() - 1)) {
       int n_i = index - m_dimensions.x + 1;
       if (n_i > m_tiles.size() - 1) {
-        throw std::runtime_error("getNeighbours execution top right: index too high: " + std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
+        throw std::runtime_error(
+            "getNeighbours execution top right: index too high: " +
+            std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
       }
       neighbours.push_back(n_i);
     }
     // right
-    if ((index % (int)m_dimensions.x < m_dimensions.x - 1) 
-      && (index < m_tiles.size() - 1)) {
+    if ((index % (int)m_dimensions.x < m_dimensions.x - 1) &&
+        (index < m_tiles.size() - 1)) {
       int n_i = index + 1;
       if (n_i > m_tiles.size() - 1) {
-        throw std::runtime_error("getNeighbours execution right: index too high: " + std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
+        throw std::runtime_error(
+            "getNeighbours execution right: index too high: " +
+            std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
       }
       neighbours.push_back(n_i);
     }
     // bottom right
-    if (include_diagonals 
-      && (index % (int)m_dimensions.x < m_dimensions.x - 1) 
-      && (index < m_tiles.size() - 1) 
-      && (index + m_dimensions.x < m_tiles.size())) {
+    if (include_diagonals &&
+        (index % (int)m_dimensions.x < m_dimensions.x - 1) &&
+        (index < m_tiles.size() - 1) &&
+        (index + m_dimensions.x < m_tiles.size())) {
       int n_i = index + m_dimensions.x + 1;
       if (n_i > m_tiles.size() - 1) {
-        throw std::runtime_error("getNeighbours execution bottom right: index too high: " + std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
+        throw std::runtime_error(
+            "getNeighbours execution bottom right: index too high: " +
+            std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
       }
       neighbours.push_back(n_i);
     }
@@ -375,17 +429,20 @@ public:
     if (index + m_dimensions.x < m_tiles.size()) {
       int n_i = index + m_dimensions.x;
       if (n_i > m_tiles.size() - 1) {
-        throw std::runtime_error("getNeighbours execution bottom: index too high: " + std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
+        throw std::runtime_error(
+            "getNeighbours execution bottom: index too high: " +
+            std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
       }
       neighbours.push_back(n_i);
     }
     // bottom left
-    if (include_diagonals 
-      && (index + m_dimensions.x < m_tiles.size()) 
-      && (index % (int)m_dimensions.x > 1 && index > 0)) {
+    if (include_diagonals && (index + m_dimensions.x < m_tiles.size()) &&
+        (index % (int)m_dimensions.x > 1 && index > 0)) {
       int n_i = index + m_dimensions.x - 1;
       if (n_i > m_tiles.size() - 1) {
-        throw std::runtime_error("getNeighbours execution bottom left: index too high: " + std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
+        throw std::runtime_error(
+            "getNeighbours execution bottom left: index too high: " +
+            std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
       }
       neighbours.push_back(n_i);
     }
@@ -393,18 +450,20 @@ public:
     if (index % (int)m_dimensions.x > 1 && index > 0) {
       int n_i = index - 1;
       if (n_i > m_tiles.size() - 1) {
-        throw std::runtime_error("getNeighbours execution left: index too high: " + std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
+        throw std::runtime_error(
+            "getNeighbours execution left: index too high: " +
+            std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
       }
       neighbours.push_back(n_i);
     }
     // top left
-    if (include_diagonals 
-      && (index % (int)m_dimensions.x > 1) 
-      && (index > 0) 
-      && (index - m_dimensions.x > 0)) {
+    if (include_diagonals && (index % (int)m_dimensions.x > 1) && (index > 0) &&
+        (index - m_dimensions.x > 0)) {
       int n_i = index - m_dimensions.x - 1;
       if (n_i > m_tiles.size() - 1) {
-        throw std::runtime_error("getNeighbours execution top left: index too high: " + std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
+        throw std::runtime_error(
+            "getNeighbours execution top left: index too high: " +
+            std::to_string(n_i) + " / " + std::to_string(m_tiles.size() - 1));
       }
       neighbours.push_back(n_i);
     }
@@ -497,7 +556,7 @@ public:
     }
     // std::cout << std::endl;
     // std::cout << "Indices size: " << indices.size()
-              // << ", vectors: " << coords.size() << std::endl;
+    // << ", vectors: " << coords.size() << std::endl;
     if (indices.size() != coords.size()) {
       throw std::runtime_error(
           "slice coords conversion: wrong number of items! " +
@@ -610,8 +669,9 @@ public:
     // std::cout << "Supplied indices to find hole in: " << std::endl;
     for (const int i : indices) {
       if (i > m_tiles.size() - 1) {
-        throw std::runtime_error("findFirstHole pre-condition: Tile index too high: " +
-                                 std::to_string(i));
+        throw std::runtime_error(
+            "findFirstHole pre-condition: Tile index too high: " +
+            std::to_string(i));
       }
       // std::cout << i << ", ";
     }
@@ -633,19 +693,22 @@ public:
     return -1;
   }
 
-  int findLastCellInRow(const std::vector<int> &indices, bool is_hole, unsigned int row = 0) const {
+  int findLastCellInRow(const std::vector<int> &indices, bool is_hole,
+                        unsigned int row = 0) const {
     const sf::IntRect bounds = findShapeBounds(indices);
-    std::cout << "find last cell in row supplied indices: ";
-    for (const int i : indices) {
-      std::cout << i << ", ";
-      if (i > m_tiles.size() - 1) {
-        throw std::runtime_error("findLastCellInRow pre-condition: Tile index too high: " +
-                                 std::to_string(i));
-      }
-    }
-    std::cout << std::endl;
+    // std::cout << "find last cell in row supplied indices: ";
+    // for (const int i : indices) {
+    //   std::cout << i << ", ";
+    //   if (i > m_tiles.size() - 1) {
+    //     throw std::runtime_error(
+    //         "findLastCellInRow pre-condition: Tile index too high: " +
+    //         std::to_string(i));
+    //   }
+    // }
+    // std::cout << std::endl;
     if (indices.size() == 0) {
-      throw std::runtime_error("findLastCellInRow pre-condition: empty indices");
+      throw std::runtime_error(
+          "findLastCellInRow pre-condition: empty indices");
     }
     int cell = indices[0];
     for (int i = bounds.left; i < bounds.left + bounds.width; ++i) {
@@ -658,7 +721,8 @@ public:
               std::to_string(index));
         }
         cell = index;
-        std::cout << "cell " << index << " [" << i << ":" << j << "] is in indices.\n";
+        // std::cout << "cell " << index << " [" << i << ":" << j
+        //           << "] is in indices.\n";
       } else {
         break;
       }
@@ -666,16 +730,19 @@ public:
     return cell;
   }
 
-  int findLastCellInColumn(const std::vector<int> &indices, bool is_hole, unsigned int column = 0) const {
+  int findLastCellInColumn(const std::vector<int> &indices, bool is_hole,
+                           unsigned int column = 0) const {
     const sf::IntRect bounds = findShapeBounds(indices);
     for (const int i : indices) {
       if (i > m_tiles.size() - 1) {
-        throw std::runtime_error("findLastCellInColumn pre-condition: Tile index too high: " +
-                                 std::to_string(i));
+        throw std::runtime_error(
+            "findLastCellInColumn pre-condition: Tile index too high: " +
+            std::to_string(i));
       }
     }
     if (indices.size() == 0) {
-      throw std::runtime_error("findLastCellInRow pre-condition: empty indices");
+      throw std::runtime_error(
+          "findLastCellInRow pre-condition: empty indices");
     }
     int cell = indices[0];
     for (int j = bounds.top; j < bounds.top + bounds.height; ++j) {
@@ -726,15 +793,13 @@ public:
     std::vector<std::vector<int>> joined;
     while (indices.size() > 0) {
       std::vector<int> section = indices;
-      std::cout << "Let's find a hole in: " << std::endl;
+      // std::cout << "Let's find a hole in: " << std::endl;
       for (const int i : section) {
         if (i > m_tiles.size() - 1) {
           throw std::runtime_error("getRectIslands: tile index too high: " +
                                    std::to_string(i));
         }
-        std::cout << i << ", ";
       }
-      std::cout << std::endl;
       int hole = findFirstCell(section, true);
       // std::cout << "section size before hole loop: " << section.size()
       //           << std::endl;
@@ -759,53 +824,84 @@ public:
           if (dx < 0 && dy < 0) {
             // Left upper side
             if (sectionBounds.width > 1 && std::abs(dx) >= std::abs(dy)) {
-              std::cout << "Hole is in the LEFT UPPER side, slicing to the RIGHT\n";
-              // int last_hole = findLastCellInRow(section, true, hole_coords.y - sectionBounds.top);
+              // std::cout
+              //     << "Hole is in the LEFT UPPER side, slicing to the
+              //     RIGHT\n";
+              // int last_hole = findLastCellInRow(section, true, hole_coords.y
+              // - sectionBounds.top);
               int last_hole = findLastCellInRow(section, true);
               Vec2 last_hole_coords = getCoordsAtIndex(last_hole);
-              std::cout << "Hole is " << hole_coords.x << ":" << hole_coords.y << ". Last one is " << last_hole_coords.x << ":" << last_hole_coords.y << std::endl;
+              // std::cout << "Hole is " << hole_coords.x << ":" <<
+              // hole_coords.y
+              //           << ". Last one is " << last_hole_coords.x << ":"
+              //           << last_hole_coords.y << std::endl;
               sub_section = slice(section, last_hole, SLICE_RIGHT);
             } else if (sectionBounds.height > 1) {
-              std::cout << "Hole is in the LEFT UPPER side, slicing to the BOTTOM\n";
-              // int last_hole = findLastCellInColumn(section, true, hole_coords.x - sectionBounds.left);
+              // std::cout
+              //     << "Hole is in the LEFT UPPER side, slicing to the
+              //     BOTTOM\n";
+              // int last_hole = findLastCellInColumn(section, true,
+              // hole_coords.x - sectionBounds.left);
               int last_hole = findLastCellInColumn(section, true);
               Vec2 last_hole_coords = getCoordsAtIndex(last_hole);
-              std::cout << "Hole is " << hole_coords.x << ":" << hole_coords.y << ". Last one is " << last_hole_coords.x << ":" << last_hole_coords.y << std::endl;
+              // std::cout << "Hole is " << hole_coords.x << ":" <<
+              // hole_coords.y
+              //           << ". Last one is " << last_hole_coords.x << ":"
+              //           << last_hole_coords.y << std::endl;
               sub_section = slice(section, last_hole, SLICE_DOWN);
             }
           } else if (dx >= 0 && dy < 0) {
             // Right upper side
             if (sectionBounds.width > 1 && std::abs(dx) >= std::abs(dy)) {
-              std::cout << "Hole is in the RIGHT UPPER side, slicing to the LEFT\n";
+              // std::cout
+              //     << "Hole is in the RIGHT UPPER side, slicing to the
+              //     LEFT\n";
               sub_section = slice(section, hole, SLICE_LEFT);
             } else if (sectionBounds.height > 1) {
-              std::cout << "Hole is in the RIGHT UPPER side, slicing to the BOTTOM\n";
-              // int last_hole = findLastCellInColumn(section, true, hole_coords.x - sectionBounds.left);
+              // std::cout
+              //     << "Hole is in the RIGHT UPPER side, slicing to the
+              //     BOTTOM\n";
+              // int last_hole = findLastCellInColumn(section, true,
+              // hole_coords.x - sectionBounds.left);
               int last_hole = findLastCellInColumn(section, true);
               Vec2 last_hole_coords = getCoordsAtIndex(last_hole);
-              std::cout << "Hole is " << hole_coords.x << ":" << hole_coords.y << ". Last one is " << last_hole_coords.x << ":" << last_hole_coords.y << std::endl;
+              // std::cout << "Hole is " << hole_coords.x << ":" <<
+              // hole_coords.y
+              //           << ". Last one is " << last_hole_coords.x << ":"
+              //      0<F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10><F10>
+              //      << last_hole_coords.y << std::endl;
               sub_section = slice(section, last_hole, SLICE_DOWN);
             }
           } else if (dx >= 0 && dy >= 0) {
             // Right lower side
             if (sectionBounds.width > 1 && std::abs(dx) >= std::abs(dy)) {
-              std::cout << "Hole is in the RIGHT LOWER side, slicing to the LEFT\n";
+              // std::cout
+              //     << "Hole is in the RIGHT LOWER side, slicing to the
+              //     LEFT\n";
               sub_section = slice(section, hole, SLICE_LEFT);
             } else if (sectionBounds.height > 1) {
-              std::cout << "Hole is in the RIGHT LOWER side, slicing to the TOP\n";
+              // std::cout
+              //     << "Hole is in the RIGHT LOWER side, slicing to the TOP\n";
               sub_section = slice(section, hole, SLICE_UP);
             }
           } else if (dx < 0 && dy >= 0) {
             // Left lower side
             if (sectionBounds.width > 1 && std::abs(dx) >= std::abs(dy)) {
-              std::cout << "Hole is in the LEFT LOWER side, slicing to the RIGHT\n";
-              // int last_hole = findLastCellInRow(section, true, hole_coords.y - sectionBounds.top);
+              // std::cout
+              //     << "Hole is in the LEFT LOWER side, slicing to the
+              //     RIGHT\n";
+              // int last_hole = findLastCellInRow(section, true, hole_coords.y
+              // - sectionBounds.top);
               int last_hole = findLastCellInRow(section, true);
               Vec2 last_hole_coords = getCoordsAtIndex(last_hole);
-              std::cout << "Hole is " << hole_coords.x << ":" << hole_coords.y << ". Last one is " << last_hole_coords.x << ":" << last_hole_coords.y << std::endl;
+              // std::cout << "Hole is " << hole_coords.x << ":" <<
+              // hole_coords.y
+              //           << ". Last one is " << last_hole_coords.x << ":"
+              //           << last_hole_coords.y << std::endl;
               sub_section = slice(section, last_hole, SLICE_RIGHT);
             } else if (sectionBounds.height > 1) {
-              std::cout << "Hole is in the LEFT LOWER side, slicing to the TOP\n";
+              // std::cout
+              //     << "Hole is in the LEFT LOWER side, slicing to the TOP\n";
               sub_section = slice(section, hole, SLICE_UP);
             }
           } else {
@@ -814,13 +910,14 @@ public:
                       << ", height:" << sectionBounds.height << std::endl;
           }
         } else {
-          std::cout << "Section is 1 tile in size. Hole is: " << hole_coords.x
-                    << ":" << hole_coords.y;
-          std::cout << "; Section contains: ";
-          for (const auto i : section) {
-            std::cout << i << ",";
-          }
-          std::cout << std::endl;
+          // std::cout << "Section is 1 tile in size. Hole is: " <<
+          // hole_coords.x
+          //           << ":" << hole_coords.y;
+          // std::cout << "; Section contains: ";
+          // for (const auto i : section) {
+          //   std::cout << i << ",";
+          // }
+          // std::cout << std::endl;
         }
         section.clear();
         section = sub_section;
@@ -907,7 +1004,8 @@ public:
     const std::vector<std::vector<int>> edgeIslands = getRectIslands(edges);
     for (const std::vector<int> &island : edgeIslands) {
       const sf::IntRect islandDims = findShapeBounds(island);
-      // std::cout << "Found island " << islandDims.left << ":" << islandDims.top
+      // std::cout << "Found island " << islandDims.left << ":" <<
+      // islandDims.top
       //           << "," << islandDims.width << ":" << islandDims.height
       //           << std::endl;
       const sf::IntRect bounds = {
@@ -915,7 +1013,8 @@ public:
           (int)(islandDims.top * m_tileset.tileHeight),
           (int)(islandDims.width * m_tileset.tileWidth),
           (int)(islandDims.height * m_tileset.tileHeight)};
-      // std::cout << "Created shape " << bounds.left << ":" << bounds.top << ","
+      // std::cout << "Created shape " << bounds.left << ":" << bounds.top <<
+      // ","
       //           << bounds.width << ":" << bounds.height << std::endl;
       edge_bounds.push_back(bounds);
     }
@@ -926,6 +1025,16 @@ public:
     return m_tiles[getIndexAtCoords(x, y)] != 0;
   }
 
+  bool is_collider(const int index) const {
+    if (index >= m_tiles.size() - 1) {
+      throw std::runtime_error("is_collider: Index out of range: " +
+                               std::to_string(index));
+    }
+    // std::cout << std::endl;
+    // std::cout << "index " << index << ": " << m_tiles[index] << std::endl;
+    return m_tiles[index] != 0;
+  }
+
   struct Rect {
     int start_x;
     int start_y;
@@ -933,15 +1042,16 @@ public:
     int end_y;
   };
 
-  void sortVertically(std::vector<Rect> & rects) const {
-    std::sort(rects.begin(), rects.end(), 
-      [](const Rect & a, const Rect & b) { 
-        return a.start_y < b.start_y;
-       });
+  void sortVertically(std::vector<Rect> &rects) const {
+    std::sort(rects.begin(), rects.end(), [](const Rect &a, const Rect &b) {
+      return a.start_y < b.start_y;
+    });
   }
 
-// Tile-merging algorithm from https://love2d.org/wiki/TileMerging, merges everything in columns
-  std::vector<sf::IntRect> getCombinedColliders(const std::vector<int> & indices) const {
+  // Tile-merging algorithm from https://love2d.org/wiki/TileMerging, merges
+  // everything in columns
+  std::vector<sf::IntRect>
+  getCombinedColliders(const std::vector<int> &indices) const {
     std::vector<Rect> rectangles = {};
     sf::IntRect bounds = findShapeBounds(indices);
 
@@ -957,23 +1067,17 @@ public:
           end_y = y;
         } else if (start_y >= 0) {
           std::vector<Rect> overlaps = {};
-          for (const Rect & r : rectangles) {
-            if ((r.end_x == x - 1)
-              && (start_y < r.start_y)
-              && (end_y >= r.end_y)) {
-                overlaps.push_back(r);
-              }
+          for (const Rect &r : rectangles) {
+            if ((r.end_x == x - 1) && (start_y < r.start_y) &&
+                (end_y >= r.end_y)) {
+              overlaps.push_back(r);
+            }
           }
           sortVertically(overlaps);
 
-          for (Rect & r : overlaps) {
+          for (Rect &r : overlaps) {
             if (start_y < r.start_y) {
-              const Rect new_rect = {
-                x,
-                start_y,
-                x,
-                r.start_y - 1
-              };
+              const Rect new_rect = {x, start_y, x, r.start_y - 1};
               rectangles.push_back(new_rect);
               start_y = r.start_y;
             }
@@ -991,12 +1095,7 @@ public:
           }
 
           if (start_y >= 0) {
-            const Rect new_rect = {
-              x,
-              start_y,
-              x,
-              end_y
-            };
+            const Rect new_rect = {x, start_y, x, end_y};
             rectangles.push_back(new_rect);
 
             start_y = -1;
@@ -1006,12 +1105,7 @@ public:
       }
 
       if (start_y >= 0) {
-        const Rect new_rect = {
-          x,
-          start_y,
-          x,
-          end_y
-        };
+        const Rect new_rect = {x, start_y, x, end_y};
         rectangles.push_back(new_rect);
 
         start_y = -1;
@@ -1022,26 +1116,38 @@ public:
     std::vector<sf::IntRect> int_rects = {};
     for (const Rect r : rectangles) {
       int_rects.push_back(sf::IntRect(
-        r.start_x * m_tileset.tileWidth,
-        r.start_y * m_tileset.tileHeight,
-        r.end_x * m_tileset.tileWidth - r.start_x * m_tileset.tileWidth + m_tileset.tileWidth,
-        r.end_y * m_tileset.tileHeight - r.start_y * m_tileset.tileHeight + m_tileset.tileHeight
-      ));
+          r.start_x * m_tileset.tileWidth, r.start_y * m_tileset.tileHeight,
+          r.end_x * m_tileset.tileWidth - r.start_x * m_tileset.tileWidth +
+              m_tileset.tileWidth,
+          r.end_y * m_tileset.tileHeight - r.start_y * m_tileset.tileHeight +
+              m_tileset.tileHeight));
     }
     return int_rects;
   }
 
-  const std::vector<int> getOccupiedTiles(const sf::IntRect & collision_shape) const {
-    // Pre-requisite: shape must be a rectangle, absolutely positioned in game world
+  const std::vector<int>
+  getOccupiedTiles(const sf::IntRect &collision_shape) const {
+    // Pre-requisite: shape must be a rectangle, absolutely positioned in game
+    // world
     std::vector<int> tiles = {};
     sf::IntRect bounds = {
-      std::round(collision_shape.left / m_tileset.tileWidth),
-      std::round(collision_shape.top / m_tileset.tileHeight),
-      std::round(collision_shape.width / m_tileset.tileWidth),
-      std::round(collision_shape.height / m_tileset.tileHeight)
-    };
-    for (int i = bounds.left; i < bounds.left + bounds.width; ++i) {
-      for (int j = bounds.top; j < bounds.top + bounds.height; ++i) {
+        (int)std::round((float)collision_shape.left / m_tileset.tileWidth),
+        (int)std::round((float)collision_shape.top / m_tileset.tileHeight),
+        (int)std::round((float)collision_shape.width / m_tileset.tileWidth),
+        (int)std::round((float)collision_shape.height / m_tileset.tileHeight)};
+    // std::cout << "=============";
+    // std::cout << "Get occupied tiles\n";
+    // std::cout << collision_shape.left << ':' << collision_shape.top << ';'
+    //           << collision_shape.width << ":" << collision_shape.height
+    //           << std::endl;
+    // std::cout << "Calculated bounds::\n";
+    // std::cout << bounds.left << ':' << bounds.top << ';' << bounds.width <<
+    // ":"
+    //           << bounds.height << std::endl;
+
+    for (int i = bounds.left; i < (bounds.left + bounds.width); ++i) {
+      for (int j = bounds.top; j < (bounds.top + bounds.height); ++j) {
+        // std::cout << "Get index at coords" << i << ":" << j << std::endl;
         int index = getIndexAtCoords(i, j);
         if (index > m_tiles.size() - 1) {
           throw std::runtime_error(
@@ -1054,11 +1160,53 @@ public:
     return tiles;
   }
 
-  const EStaticCollisionDirection getCollisionDirection(const sf::IntRect & collision_shape) const {
+  const EStaticCollisionDirection
+  getCollisionDirection(const sf::IntRect &collision_shape) const {
     EStaticCollisionDirection direction;
     for (const int tile : getOccupiedTiles(collision_shape)) {
-
+      int n_top = getTopNeighbour(tile);
+      int n_right = getRightNeighbour(tile);
+      int n_bottom = getBottomNeighbour(tile);
+      int n_left = getLeftNeighbour(tile);
+      // int n_top_val = m_tiles[n_top];
+      // int n_right_val = m_tiles[n_right];
+      // int n_bottom_val = m_tiles[n_bottom];
+      // int n_left_val = m_tiles[n_left];
+      // std::cout << "Collision shape: " << collision_shape.left << ":"
+      //           << collision_shape.top << ";" << collision_shape.width << ":"
+      //           << collision_shape.height << std::endl;
+      std::cout << "Tile " << tile << "left: " << m_tiles[n_left]
+                << "right: " << m_tiles[n_right] << "top: " << m_tiles[n_top]
+                << "bottom: " << m_tiles[n_bottom] << std::endl;
+      if (!is_collider(n_top)) {
+        direction.set(StaticCollisionDirection::top, true);
+      }
+      if (!is_collider(n_right)) {
+        direction.set(StaticCollisionDirection::right, true);
+      }
+      if (!is_collider(n_bottom)) {
+        direction.set(StaticCollisionDirection::bottom, true);
+      }
+      if (!is_collider(n_left)) {
+        direction.set(StaticCollisionDirection::left, true);
+      }
     }
+    std::cout << "CShape " << collision_shape.left << ":" << collision_shape.top
+              << ";" << collision_shape.width << ":" << collision_shape.height;
+    if (direction[StaticCollisionDirection::top]) {
+      std::cout << " top";
+    }
+    if (direction[StaticCollisionDirection::right]) {
+      std::cout << " right";
+    }
+    if (direction[StaticCollisionDirection::bottom]) {
+      std::cout << " bottom";
+    }
+    if (direction[StaticCollisionDirection::left]) {
+      std::cout << " left";
+    }
+    std::cout << std::endl;
+    return direction;
   }
 
   const Vec2 &getDimensions() const { return m_dimensions; }
