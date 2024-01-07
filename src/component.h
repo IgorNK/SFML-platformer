@@ -23,12 +23,14 @@ class CVelocity : public Component {
 public:
   Vec2 velocity = {0, 0};
   float maxXSpeed = 1.5f;
-  float maxYSpeed = 3.0f;
+  float maxYSpeed = 6.0f;
   float currentSpeed = 0.f;
   float acceleration = 1.0f;
   float deceleration = 0.2f;
   float margin = 0.1f;
-  float jumpForce = 1.0f;
+  float jumpForce = 3.0f;
+  bool midJump{false};
+  bool canJump{true};
   CVelocity() {}
   ~CVelocity() {}
 };
@@ -63,8 +65,8 @@ public:
   Vec2 prevAxis{0, 0};
   bool directionChanged{false};
   bool jump{false};
-  int jumpDuration{20};
-  int jumpCountdown{20};
+  int jumpDuration{10};
+  int jumpCountdown{0};
   CInput() {}
   ~CInput() {}
 };
@@ -89,6 +91,7 @@ public:
   float distance{100};
   int maxColliders{12};
   bool touchedGround{false};
+  bool touchedCeiling{false};
   EStaticCollisionDirection collidedThisFrame;
   std::unordered_map<size_t, Overlap> prevOverlap{};
   CDynamicCollision() {}

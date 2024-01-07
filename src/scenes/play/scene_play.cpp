@@ -241,12 +241,27 @@ void Scene_Play::sInputHandling() {
 
     // Jumping
     if (col.touchedGround) {
-      input.jumpCountdown = input.jumpDuration;
+      vel.midJump = false;
+      if (vel.canJump && input.jump) {
+        vel.canJump = false;
+        input.jumpCountdown = input.jumpDuration;
+      }
     }
-
-    if (input.jump && input.jumpCountdown >= 0) {
-      std::cout << "Jump" << std::endl;
+    if (!input.jump) {
+      if (!col.touchedGround) {
+        vel.midJump = true;
+      } else {
+        vel.canJump = true;
+      }
+    }
+    if (input.jumpCountdown >= 0) {
       --input.jumpCountdown;
+    }
+    if (col.touchedCeiling) {
+      vel.midJump = true;
+      vel.velocity.y = 0;
+    }
+    if (input.jump && !vel.midJump && input.jumpCountdown >= 0) {
       vel.velocity.y -= vel.jumpForce;
     }
   }
@@ -473,6 +488,21 @@ void Scene_Play::sDebug() {
     CTransform &xform = m_player->getComponent<CTransform>();
     CVelocity &vel = m_player->getComponent<CVelocity>();
     CInput &input = m_player->getComponent<CInput>();
+    CGravity &grav = m_player->getComponent<CGravity>();
+    CDynamicCollision &col = m_player->getComponent<CDynamicCollision>();
+    if (grav.has) {
+      static bool grav_on = true;
+      static float prev_acc = grav.acceleration;
+      ImGui::SeparatorText("Player graivty");
+      if (ImGui::Checkbox("On", &grav_on)) {
+        if (grav_on) {
+          grav.acceleration = prev_acc;
+        } else {
+          grav.acceleration = 0;
+        }
+      }
+      ImGui::InputFloat("acceleration", &grav.acceleration);
+    }
     if (input.has) {
       float axis[2] = {input.axis.x, input.axis.y};
       float prevAxis[2] = {input.prevAxis.x, input.prevAxis.y};
@@ -502,6 +532,12 @@ void Scene_Play::sDebug() {
       ImGui::InputFloat("deceleration", &vel.deceleration, 0.01f, 0.1f);
       ImGui::InputFloat("margin", &vel.margin, 0.01f, 0.1f);
       ImGui::InputFloat("jumpForce", &vel.jumpForce, 0.01f, 0.1f);
+      ImGui::Checkbox("midJump", &vel.midJump);
+      ImGui::Checkbox("canJump", &vel.canJump);
+    }
+    if (col.has) {
+      ImGui::SeparatorText("Player DynamicCollision");
+      ImGui::Checkbox("touchedGround", &col.touchedGround);
     }
   }
   ImGui::EndChild();
