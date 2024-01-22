@@ -22,6 +22,7 @@ void AnimatedSprite::update() {
   //           << m_sprite.getTexture()->getSize().y << std::endl;
   m_sprite.setTextureRect(m_currentFrames->at(m_currentFrame));
   // m_sprite.setTextureRect(m_animations[m_currentAnimation][m_currentFrame]);
+  // std::cout << "Current frame: " << m_currentFrame << " / " << m_currentFrames->size() << std::endl;
   ++m_currentFrame;
   if (m_currentFrame >= m_frameCount) {
     if (m_repeat) {
@@ -63,6 +64,7 @@ bool AnimatedSprite::play(const std::string &anim_name, const int speed = 10) {
               << std::endl;
     return false;
   }
+  m_currentFrame = 0;
   m_speed = speed;
   m_currentAnimation = anim_name;
   m_currentFrames = std::make_shared<std::vector<sf::IntRect>>(

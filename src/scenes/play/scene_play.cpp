@@ -164,8 +164,8 @@ void Scene_Play::sUserInput() {
 
   if (m_player && m_player->hasComponent<CInput>()) {
     CInput &p_input = m_player->getComponent<CInput>();
-    if ((p_input.prevAxis.x > 0 && p_input.axis.x < 0) ||
-        (p_input.prevAxis.x < 0 && p_input.axis.x > 0)) {
+    if ((p_input.prevAxis.x >= 0 && p_input.axis.x < 0) ||
+        (p_input.prevAxis.x <= 0 && p_input.axis.x > 0)) {
       p_input.directionChanged = true;
     } else {
       p_input.directionChanged = false;
@@ -378,24 +378,24 @@ void Scene_Play::sAnimation() {
 
     if (p_state.prevState != p_state.state) {
       switch (p_state.state) {
-        case (CAnimationState::AnimState::ANIM_STATE_IDLE) {
-          p_sprite.play("Idle", 10);
-          p_sprite.setRepeat(true);
+        case (CAnimationState::AnimState::ANIM_STATE_IDLE): {
+          p_sprite.sprite.play("Idle", 10);
+          p_sprite.sprite.setRepeat(true);
           break;
         }
-        case (CAnimationState::AnimState::ANIM_STATE_JUMP) {
-          p_sprite.play("Jump", 10);
-          p_sprite.setRepeat(false);
+        case (CAnimationState::AnimState::ANIM_STATE_JUMP): {
+          p_sprite.sprite.play("Jump", 10);
+          p_sprite.sprite.setRepeat(false);
           break;
         }
-        case (CAnimationState::AnimState::ANIM_STATE_FALL) {
-          p_sprite.play("Fall", 10);
-          p_sprite.setRepeat(false);
+        case (CAnimationState::AnimState::ANIM_STATE_FALL): {
+          p_sprite.sprite.play("Fall", 10);
+          p_sprite.sprite.setRepeat(false);
           break;
         }
-        case (CAnimationState::AnimState::ANIM_STATE_RUN) {
-          p_sprite.play("Run", 10);
-          p_sprite.setRepeat(true);
+        case (CAnimationState::AnimState::ANIM_STATE_RUN): {
+          p_sprite.sprite.play("Run", 2);
+          p_sprite.sprite.setRepeat(true);
           break;
         }
       }
@@ -403,9 +403,9 @@ void Scene_Play::sAnimation() {
 
     if (p_input.directionChanged) {
       if (p_input.axis.x > 0) {
-        p_sprite.setDirection(true);
+        p_sprite.sprite.setDirection(true);
       } else if (p_input.axis.x < 0) {
-        p_sprite.setDirection(false);
+        p_sprite.sprite.setDirection(false);
       }
     }
   }

@@ -71,7 +71,7 @@ public:
   AnimState prevState { AnimState::ANIM_STATE_IDLE };
   CAnimationState() {}
   ~CAnimationState() {}
-}
+};
 
 class CInput : public Component {
 public:
