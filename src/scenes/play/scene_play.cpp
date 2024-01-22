@@ -17,6 +17,7 @@ void Scene_Play::update() {
   sGravity();
   sInputHandling();
   sMovement();
+  sAnimation();
   sCollision();
   sCamera();
   sDebug();
@@ -313,6 +314,7 @@ void Scene_Play::spawn_player(Vec2 position, bool snap_to_grid) {
   p_sprite.load_file("resources/VirtualGuy.atlas", m_game->getAssets());
   p_sprite.setRepeat(true);
   p_sprite.play("Idle", 10);
+  m_player->addComponent<CAnimationState>();
   m_player->addComponent<CBoundingBox>(p_sprite.getSize().x,
                                        p_sprite.getSize().y);
   m_player->addComponent<CDynamicCollision>();
@@ -342,36 +344,100 @@ void Scene_Play::onEnd() {
   m_game->changeScene("MENU");
 }
 
+void Scene_Play::sAnimation() {
+  if (!m_sAnimation) { return; }
+  
+  for (const std::shared_ptr<Entity> p : m_entities.get_entities(Tag::Player)) {
+    CAnimatedSprite &p_sprite = p->getComponent<CAnimatedSprite>();
+    CAnimationState &p_state = p->getComponent<CAnimationState>();
+    CDynamicCollision &p_col = p->getComponent<CDynamicCollision>();
+    CVelocity &p_vel = m_player->getComponent<CVelocity>();
+    CInput &p_input = m_player->getComponent<CInput>();
+    if (
+      !p_sprite.has 
+      || !p_state.has 
+      || !p_col.has 
+      || !p_vel.has 
+      || !p_input.has
+    ) { return; }
+
+    p_state.prevState = p_state.state;
+    if (!p_col.touchedGround) {
+      if (p_vel.velocity.y < 0) {
+        p_state.state = CAnimationState::AnimState::ANIM_STATE_JUMP;
+      } else {
+        p_state.state = CAnimationState::AnimState::ANIM_STATE_FALL;
+      }
+    } else {
+      if (p_input.axis.x != 0) {
+        p_state.state = CAnimationState::AnimState::ANIM_STATE_RUN;
+      } else {
+        p_state.state = CAnimationState::AnimState::ANIM_STATE_IDLE;
+      }
+    }
+
+    if (p_state.prevState != p_state.state) {
+      switch (p_state.state) {
+        case (CAnimationState::AnimState::ANIM_STATE_IDLE) {
+          p_sprite.play("Idle", 10);
+          p_sprite.setRepeat(true);
+          break;
+        }
+        case (CAnimationState::AnimState::ANIM_STATE_JUMP) {
+          p_sprite.play("Jump", 10);
+          p_sprite.setRepeat(false);
+          break;
+        }
+        case (CAnimationState::AnimState::ANIM_STATE_FALL) {
+          p_sprite.play("Fall", 10);
+          p_sprite.setRepeat(false);
+          break;
+        }
+        case (CAnimationState::AnimState::ANIM_STATE_RUN) {
+          p_sprite.play("Run", 10);
+          p_sprite.setRepeat(true);
+          break;
+        }
+      }
+    }
+
+    if (p_input.directionChanged) {
+      if (p_input.axis.x > 0) {
+        p_sprite.setDirection(true);
+      } else if (p_input.axis.x < 0) {
+        p_sprite.setDirection(false);
+      }
+    }
+  }
+}
+
 void Scene_Play::sRender() {
   sf::RenderWindow &window = m_game->getWindow();
+
   if (m_sRender) {
-    // std::cout << "In scene render loop\n";
     for (const auto &entity : m_entities.get_entities()) {
-      // std::cout << "entity\n";
       CAnimatedSprite &anim_sprite = entity->getComponent<CAnimatedSprite>();
       CTransform &transform = entity->getComponent<CTransform>();
       if (!anim_sprite.has || !transform.has) {
-        // std::cout << "entity doesn't have a sprite and transform\n";
         continue;
       }
       if (m_frameCount % anim_sprite.sprite.getSpeed() == 0) {
-        // std::cout << "should update sprite\n";
         anim_sprite.sprite.update();
       }
       anim_sprite.sprite.setPosition(transform.pos);
-      // std::cout << "drawing sprite at pos: " << transform.pos.x << ":"
-      //           << transform.pos.y << '\n';
       window.draw(anim_sprite.sprite.getSprite());
     }
     if (m_sRenderMap) {
       window.draw(m_tilemap);
     }
   }
+
   if (m_sDebugGrid) {
     for (const DebugCell &cell : m_debug_grid) {
       window.draw(cell);
     }
   }
+
   if (m_sDebugCollision) {
     for (const auto entity : m_entities.get_entities()) {
       const CBoundingBox &bbox = entity->getComponent<CBoundingBox>();
@@ -393,6 +459,7 @@ void Scene_Play::sRender() {
       window.draw(s_box);
     }
   }
+
   window.setView(m_view);
 }
 

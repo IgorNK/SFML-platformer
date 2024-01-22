@@ -59,6 +59,20 @@ public:
   ~CAnimatedSprite() {}
 };
 
+class CAnimationState: public Component {
+public:
+  enum AnimState {
+    ANIM_STATE_IDLE,
+    ANIM_STATE_JUMP,
+    ANIM_STATE_FALL,
+    ANIM_STATE_RUN
+  };
+  AnimState state { AnimState::ANIM_STATE_IDLE };
+  AnimState prevState { AnimState::ANIM_STATE_IDLE };
+  CAnimationState() {}
+  ~CAnimationState() {}
+}
+
 class CInput : public Component {
 public:
   Vec2 axis{0, 0};

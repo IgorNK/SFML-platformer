@@ -21,6 +21,7 @@ class Scene_Play : public Scene {
   bool m_sDebugCollision{true};
   bool m_sDebugGrid{false};
   bool m_sRenderMap{true};
+  bool m_sAnimation{true};
 
   void register_input();
   void init();
@@ -37,6 +38,7 @@ public:
 
   // Systems
   void sMovement();
+  void sAnimation();
   void sUserInput();
   void sInputHandling();
   void sRender();

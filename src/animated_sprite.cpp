@@ -36,6 +36,14 @@ void AnimatedSprite::setPosition(const Vec2 &pos) {
   m_sprite.setPosition({pos.x, pos.y});
 }
 
+void AnimatedSprite::setDirection(bool right) {
+  if (right) {
+    m_sprite.setScale(1, 1);
+  } else {
+    m_sprite.setScale(-1, 1);
+  }
+}
+
 void AnimatedSprite::onEnd() {
   pause();
   m_hasEnded = true;
@@ -90,29 +98,29 @@ bool AnimatedSprite::load_file(const std::string &path, Assets &assets) {
     return false;
   }
 
-  std::string word, imagePath, size, repeat;
-  std::getline(atlas_file, imagePath);
+  std::string word, imageName, size, repeat;
+  std::getline(atlas_file, imageName);
   std::getline(atlas_file, size);
   std::getline(atlas_file, repeat);
 
-  if (imagePath == "") {
+  if (imageName == "") {
     throw std::runtime_error("Atlas file " + path +
-                             " does not contain image path.");
+                             " does not contain image name.");
     return false;
   }
 
   // std::string::size_type path_delim = path.find_last_of("\\/");
   // std::string path_dir = path.substr(0, path_delim);
-  // std::cout << "loading image " << path_dir + '/' + imagePath << std::endl;
+  // std::cout << "loading image " << path_dir + '/' + imageName << std::endl;
 
-  // if (!m_texture.loadFromFile(path_dir + '/' + imagePath)) {
-  //   throw std::runtime_error("Couldn't load texture " + imagePath);
+  // if (!m_texture.loadFromFile(path_dir + '/' + imageName)) {
+  //   throw std::runtime_error("Couldn't load texture " + imageName);
   //   return false;
   // }
-  const sf::Texture &tex = assets.getTexture(imagePath);
+  const sf::Texture &tex = assets.getTexture(imageName);
   std::cout << "got texture: " << tex.getSize().x << ":" << tex.getSize().y
             << std::endl;
-  m_sprite.setTexture(assets.getTexture(imagePath));
+  m_sprite.setTexture(assets.getTexture(imageName));
 
   std::string::size_type size_s = size.find(':');
   std::string::size_type size_d = size.find(',', size_s);

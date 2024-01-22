@@ -6,7 +6,7 @@
 #include <tuple>
 #include <vector>
 
-typedef std::tuple<CTransform, CVelocity, CBoundingBox, CAnimatedSprite, CInput,
+typedef std::tuple<CTransform, CVelocity, CBoundingBox, CAnimatedSprite, CAnimationState, CInput,
                    CStaticCollision, CDynamicCollision, CGravity>
     Components;
 

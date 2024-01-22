@@ -53,4 +53,5 @@ public:
   void pause();
   void setRepeat(bool repeat);
   void setPosition(const Vec2 &pos);
+  void setDirection(bool right);
 };
