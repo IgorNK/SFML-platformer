@@ -27,6 +27,7 @@ class Scene_Play : public Scene {
   void init();
   void onEnd();
   void spawn_player(Vec2 position, bool snap_to_grid = true);
+  void spawn_box(Vec2 position, bool snap_to_grid = true);
   void spawn_entities(const Level &level);
   void spawn_collision(const Level &level);
 

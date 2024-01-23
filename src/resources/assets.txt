@@ -22,3 +22,31 @@ Texture [
   name="TerrainAtlas.png"
   path=resources/TerrainAtlas.png
 ]
+Texture [
+  name="BGimage.png"
+  path=resources/BGimage.png
+]
+Texture [
+  name="BigClouds.png"
+  path=resources/BigClouds.png
+]
+Texture [
+  name="PalmTrees.png"
+  path=resources/PalmTrees.png
+]
+Texture [
+  name="Projectiles.png"
+  path=resources/Projectiles.png
+]
+Texture [
+  name="CoinsDiamonds.png"
+  path=resources/CoinsDiamonds.png
+]
+Texture [
+  name="BGimage.png"
+  path=resources/BGimage.png
+]
+Texture [
+  name="Box.png"
+  path=resources/Box.png
+]

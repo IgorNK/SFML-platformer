@@ -10,7 +10,7 @@ void AnimatedSprite::update() {
     return;
   }
   if (!m_currentFrames) {
-    std::cerr << "Current frames is nullptr\n";
+    // std::cerr << "Current frames is nullptr\n";
     return;
   }
   // std::cout << "render frame " << m_currentFrame << std::endl;
@@ -60,8 +60,8 @@ const std::vector<std::string> AnimatedSprite::getAnimationNames() {
 
 bool AnimatedSprite::play(const std::string &anim_name, const int speed = 10) {
   if (m_animations.find(anim_name) == m_animations.end()) {
-    std::cerr << "No animation [" << anim_name << "] on AnimatedSprite."
-              << std::endl;
+    // std::cerr << "No animation [" << anim_name << "] on AnimatedSprite."
+    //           << std::endl;
     return false;
   }
   m_currentFrame = 0;
@@ -69,10 +69,10 @@ bool AnimatedSprite::play(const std::string &anim_name, const int speed = 10) {
   m_currentAnimation = anim_name;
   m_currentFrames = std::make_shared<std::vector<sf::IntRect>>(
       m_animations[m_currentAnimation]);
-  std::cout << "m_anim: " << m_animations[m_currentAnimation][0].left << ":"
-            << m_animations[m_currentAnimation][0].top << std::endl;
-  std::cout << "m_curr: " << m_currentFrames->at(0).left << ":"
-            << m_currentFrames->at(0).top << std::endl;
+  // std::cout << "m_anim: " << m_animations[m_currentAnimation][0].left << ":"
+  //           << m_animations[m_currentAnimation][0].top << std::endl;
+  // std::cout << "m_curr: " << m_currentFrames->at(0).left << ":"
+  //           << m_currentFrames->at(0).top << std::endl;
   m_frameCount = m_animations[anim_name].size();
   const sf::IntRect clipRect = m_currentFrames->at(0);
   m_sprite.setOrigin({(float)clipRect.width / 2, (float)clipRect.height / 2});

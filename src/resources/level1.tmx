@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="36" height="20" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="10">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="36" height="20" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="11">
  <editorsettings>
   <export target="level1..tmx" format="tmx"/>
  </editorsettings>
@@ -29,10 +29,11 @@
 </data>
  </layer>
  <objectgroup id="2" name="Entities">
-  <object id="5" name="PlayerStart" type="EntitySpawn" x="200" y="491.5">
+  <object id="5" name="PlayerStart" type="EntitySpawn" x="462" y="348.5">
    <point/>
   </object>
-  <object id="6" name="CoinBrick" type="EntitySpawn" x="336" y="304"/>
+  <object id="6" name="Box" type="EntitySpawn" x="334" y="304"/>
+  <object id="10" name="Box" type="EntitySpawn" x="335" y="401"/>
   <object id="7" name="Spikes" type="EntitySpawn" x="520" y="496"/>
   <object id="8" name="Exit" type="EntitySpawn" x="1000" y="496"/>
   <object id="9" name="Spikes" type="EntitySpawn" x="552" y="496"/>

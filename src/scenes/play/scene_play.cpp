@@ -275,6 +275,9 @@ void Scene_Play::sGravity() {
     if (!velocity.has || !gravity.has) {
       return;
     }
+    if (collision.touchedGround) {
+      return;
+    }
     velocity.velocity.y += gravity.acceleration;
     if (collision.has && collision.touchedGround) {
       velocity.velocity.y = 0;
@@ -296,6 +299,10 @@ void Scene_Play::spawn_entities(const Level &level) {
       std::cout << "Spawning player at: " << e_data.x << ":" << e_data.y
                 << std::endl;
       spawn_player({(float)e_data.x, (float)e_data.y}, true);
+    }
+    if (e_data.name == "Box") {
+      std::cout << "Spawning box at: " << e_data.x << ":" << e_data.y << std::endl;
+      spawn_box({(float)e_data.x, (float)e_data.y}, true);
     }
   }
 }
@@ -320,6 +327,24 @@ void Scene_Play::spawn_player(Vec2 position, bool snap_to_grid) {
   m_player->addComponent<CDynamicCollision>();
   m_player->addComponent<CInput>();
   m_player->addComponent<CGravity>();
+}
+
+void Scene_Play::spawn_box(Vec2 position, bool snap_to_grid) {
+  std::cout << "spawning box entity.\n";
+  if (snap_to_grid) {
+    position = m_level.snap_to_grid(position, SNAP_CENTER);
+  }
+  const std::shared_ptr<Entity> box = m_entities.add_entity(Tag::Player);
+  box->addComponent<CTransform>(position);
+  box->addComponent<CAnimatedSprite>();
+  AnimatedSprite &b_sprite = box->getComponent<CAnimatedSprite>().sprite;
+  b_sprite = AnimatedSprite();
+  b_sprite.load_file("resources/Box.atlas", m_game->getAssets());
+  b_sprite.setRepeat(false);
+  b_sprite.play("Idle", 10);
+  box->addComponent<CBoundingBox>(b_sprite.getSize().x,
+                                       b_sprite.getSize().y);
+  box->addComponent<CDynamicCollision>();
 }
 
 void Scene_Play::spawn_collision(const Level &level) {
