@@ -49,4 +49,10 @@ public:
   std::vector<DebugCell> spawn_grid(const Vec2 &size, const Vec2 &grid_size);
   void sCollision();
   void sGravity();
+  void sHitReaction();
+  void sLifespan();
+  void sCountdowns();
+  void onHit(const std::shared_ptr<Entity> entity, const int damage);
+  void onDeath(const std::shared_ptr<Entity> entity);
+  void onShoot(const std::shared_ptr<Entity> entity);
 };

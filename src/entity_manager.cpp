@@ -12,6 +12,17 @@ const Entities & EntityManager::get_entities(const Tag tag)  {
 	return m_tag_entities[tag];
 }
 
+const std::shared_ptr<Entity> EntityManager::get_entity(const size_t id) {
+	// std::cout << "get entity for id: " << id << std::endl;
+	auto iter = std::find_if(m_entities.begin(), m_entities.end(), [&](auto e){ return e->id() == id; });
+	if (iter != m_entities.end()) {
+		return *iter;
+	}
+	else {
+		return std::shared_ptr<Entity>();
+	}
+}
+
 const std::shared_ptr<Entity> EntityManager::add_entity(const Tag tag) {
 	const std::shared_ptr<Entity> entity = std::shared_ptr<Entity>(new Entity(tag, m_entity_count++));
 	m_to_add.push_back(entity);

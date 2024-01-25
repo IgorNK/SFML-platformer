@@ -1,10 +1,13 @@
 #include "component.h"
 
 void resolve_collision(
-    CDynamicCollision &p_col, const CBoundingBox &p_bbox, CTransform &p_xform,
+    const std::shared_ptr<Entity> entity,
     const std::map<float,
-                   std::tuple<size_t, Overlap, sf::IntRect, CStaticCollision>>
+                   std::tuple<size_t, Overlap, std::shared_ptr<Entity>>>
         &static_overlaps) {
+  CCharacterController &p_cont = entity->getComponent<CCharacterController>();
+  const CBoundingBox &p_bbox = entity->getComponent<CBoundingBox>();
+  CTransform &p_xform = entity->getComponent<CTransform>();
   int max_push = 128;
   float margin = 0.1f;
 
@@ -12,18 +15,21 @@ void resolve_collision(
   // as collider
 
   int count = 0;
-  p_col.touchedGround = false;
-  p_col.touchedCeiling = false;
+  p_cont.touchedGround = false;
+  p_cont.touchedCeiling = false;
   for (std::pair<float,
-                 std::tuple<size_t, Overlap, sf::IntRect, CStaticCollision>>
+                 std::tuple<size_t, Overlap, std::shared_ptr<Entity>>>
            o : static_overlaps) {
     size_t id = std::get<0>(o.second);
     Overlap &overlap = std::get<1>(o.second);
-    const sf::IntRect &rect = std::get<2>(o.second);
-    const CStaticCollision &w_col = std::get<3>(o.second);
+    const std::shared_ptr<Entity> wall = std::get<2>(o.second);
+    const sf::IntRect &rect = wall->getComponent<CBoundingBox>().rect;
+    CStaticCollision &w_col = wall->getComponent<CStaticCollision>();
+    w_col.processed = true;
+    w_col.collidedThisFrame = {};
 
-    if (p_col.prevOverlap.find(id) != p_col.prevOverlap.end()) {
-      const Overlap &prevOverlap = p_col.prevOverlap[id];
+    if (p_cont.prevOverlap.find(id) != p_cont.prevOverlap.end()) {
+      const Overlap &prevOverlap = p_cont.prevOverlap[id];
       int count = 0;
       if (overlap.right >= 0 && overlap.left >= 0 && overlap.bottom >= 0 &&
           overlap.top >= 0) {
@@ -41,33 +47,36 @@ void resolve_collision(
           if ((prevOverlap.right <= 0 || prevOverlap.left <= 0) &&
               (prevOverlap.top <= 0 || prevOverlap.bottom <= 0) &&
               w_col.direction[StaticCollisionDirection::top] &&
-              !p_col.collidedThisFrame[StaticCollisionDirection::top]) {
-            std::cout << "56 RIGHT TOP, Strict diagonal\n";
+              !p_cont.collidedThisFrame[StaticCollisionDirection::top]) {
+            // std::cout << "56 RIGHT TOP, Strict diagonal\n";
             p_xform.pos.y -= (overlap.top);
             overlap.top = 0;
-            p_col.collidedThisFrame.set(StaticCollisionDirection::top, true);
-            p_col.collidedThisFrame.set(StaticCollisionDirection::right, true);
-            p_col.touchedGround = true;
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::top, true);
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::right, true);
+            p_cont.touchedGround = true;
+            w_col.collidedThisFrame[entity->id()] = StaticCollisionDirection::top;
           }
           if (prevOverlap.right > 0 && prevOverlap.left > 0 &&
               w_col.direction[StaticCollisionDirection::top] &&
-              !p_col.collidedThisFrame[StaticCollisionDirection::top]) {
-            std::cout << "40 RIGHT TOP, Fall from above\n";
+              !p_cont.collidedThisFrame[StaticCollisionDirection::top]) {
+            // std::cout << "40 RIGHT TOP, Fall from above\n";
             p_xform.pos.y -= (overlap.top);
             overlap.top = 0;
-            p_col.collidedThisFrame.set(StaticCollisionDirection::top, true);
-            p_col.collidedThisFrame.set(StaticCollisionDirection::right, true);
-            p_col.touchedGround = true;
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::top, true);
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::right, true);
+            p_cont.touchedGround = true;
+            w_col.collidedThisFrame[entity->id()] = StaticCollisionDirection::top;
           }
           if (prevOverlap.top > 0 && prevOverlap.bottom > 0 &&
               w_col.direction[StaticCollisionDirection::right] &&
-              !p_col.collidedThisFrame[StaticCollisionDirection::top] &&
-              !p_col.collidedThisFrame[StaticCollisionDirection::right]) {
-            std::cout << "47 RIGHT TOP, Bump to the right\n";
+              !p_cont.collidedThisFrame[StaticCollisionDirection::top] &&
+              !p_cont.collidedThisFrame[StaticCollisionDirection::right]) {
+            // std::cout << "47 RIGHT TOP, Bump to the right\n";
             p_xform.pos.x += (overlap.right + margin);
             overlap.right = 0;
-            p_col.collidedThisFrame.set(StaticCollisionDirection::top, true);
-            p_col.collidedThisFrame.set(StaticCollisionDirection::right, true);
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::top, true);
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::right, true);
+            w_col.collidedThisFrame[entity->id()] = StaticCollisionDirection::right;
           }
         } else if (std::abs(prevOverlap.left) < std::abs(prevOverlap.right) &&
                    std::abs(prevOverlap.top) <= std::abs(prevOverlap.bottom)) {
@@ -75,33 +84,36 @@ void resolve_collision(
           if ((prevOverlap.right <= 0 || prevOverlap.left <= 0) &&
               (prevOverlap.top <= 0 || prevOverlap.bottom <= 0) &&
               w_col.direction[StaticCollisionDirection::top] &&
-              !p_col.collidedThisFrame[StaticCollisionDirection::top]) {
-            std::cout << "82 LEFT TOP, Strict diagonal\n";
+              !p_cont.collidedThisFrame[StaticCollisionDirection::top]) {
+            // std::cout << "82 LEFT TOP, Strict diagonal\n";
             p_xform.pos.y -= (overlap.top);
             overlap.top = 0;
-            p_col.collidedThisFrame.set(StaticCollisionDirection::top, true);
-            p_col.collidedThisFrame.set(StaticCollisionDirection::left, true);
-            p_col.touchedGround = true;
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::top, true);
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::left, true);
+            p_cont.touchedGround = true;
+            w_col.collidedThisFrame[entity->id()] = StaticCollisionDirection::top;
           }
           if (prevOverlap.right > 0 && prevOverlap.left > 0 &&
               w_col.direction[StaticCollisionDirection::top] &&
-              !p_col.collidedThisFrame[StaticCollisionDirection::top]) {
-            std::cout << "57 LEFT TOP, Fall from above\n";
+              !p_cont.collidedThisFrame[StaticCollisionDirection::top]) {
+            // std::cout << "57 LEFT TOP, Fall from above\n";
             p_xform.pos.y -= (overlap.top);
             overlap.top = 0;
-            p_col.collidedThisFrame.set(StaticCollisionDirection::top, true);
-            p_col.collidedThisFrame.set(StaticCollisionDirection::left, true);
-            p_col.touchedGround = true;
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::top, true);
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::left, true);
+            p_cont.touchedGround = true;
+            w_col.collidedThisFrame[entity->id()] = StaticCollisionDirection::top;
           }
           if (prevOverlap.top > 0 && prevOverlap.bottom > 0 &&
               w_col.direction[StaticCollisionDirection::left] &&
-              !p_col.collidedThisFrame[StaticCollisionDirection::top] &&
-              !p_col.collidedThisFrame[StaticCollisionDirection::left]) {
-            std::cout << "64 LEFT TOP, Bump to the left\n";
+              !p_cont.collidedThisFrame[StaticCollisionDirection::top] &&
+              !p_cont.collidedThisFrame[StaticCollisionDirection::left]) {
+            // std::cout << "64 LEFT TOP, Bump to the left\n";
             p_xform.pos.x -= (overlap.left + margin);
             overlap.left = 0;
-            p_col.collidedThisFrame.set(StaticCollisionDirection::left, true);
-            p_col.collidedThisFrame.set(StaticCollisionDirection::top, true);
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::left, true);
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::top, true);
+            w_col.collidedThisFrame[entity->id()] = StaticCollisionDirection::left;
           }
         } else if (std::abs(prevOverlap.right) <= std::abs(prevOverlap.left) &&
                    std::abs(prevOverlap.bottom) < std::abs(prevOverlap.top)) {
@@ -109,29 +121,32 @@ void resolve_collision(
           if ((prevOverlap.right <= 0 || prevOverlap.left <= 0) &&
               (prevOverlap.top <= 0 || prevOverlap.bottom <= 0) &&
               w_col.direction[StaticCollisionDirection::right] &&
-              !p_col.collidedThisFrame[StaticCollisionDirection::right]) {
-            std::cout << "111 RIGHT BOTTOM, Strict diagonal\n";
+              !p_cont.collidedThisFrame[StaticCollisionDirection::right]) {
+            // std::cout << "111 RIGHT BOTTOM, Strict diagonal\n";
             p_xform.pos.x += (overlap.right + margin);
             overlap.right = 0;
-            p_col.collidedThisFrame.set(StaticCollisionDirection::right, true);
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::right, true);
+            w_col.collidedThisFrame[entity->id()] = StaticCollisionDirection::right;
           }
           if (prevOverlap.right > 0 && prevOverlap.left > 0 &&
               w_col.direction[StaticCollisionDirection::bottom] &&
-              !p_col.collidedThisFrame[StaticCollisionDirection::bottom]) {
-            std::cout << "73 RIGHT BOTTOM, Hit the ceiling ovelap.bottom: "
-                      << overlap.bottom << "\n";
+              !p_cont.collidedThisFrame[StaticCollisionDirection::bottom]) {
+            // std::cout << "73 RIGHT BOTTOM, Hit the ceiling ovelap.bottom: "
+                      // << overlap.bottom << "\n";
             p_xform.pos.y += (overlap.bottom + margin);
             overlap.bottom = 0;
-            p_col.collidedThisFrame.set(StaticCollisionDirection::bottom, true);
-            p_col.touchedCeiling = true;
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::bottom, true);
+            p_cont.touchedCeiling = true;
+            w_col.collidedThisFrame[entity->id()] = StaticCollisionDirection::bottom;
           }
           if (prevOverlap.top > 0 && prevOverlap.bottom > 0 &&
               w_col.direction[StaticCollisionDirection::right] &&
-              !p_col.collidedThisFrame[StaticCollisionDirection::right]) {
-            std::cout << "80 RIGHT BOTTOM, Bump to the right\n";
+              !p_cont.collidedThisFrame[StaticCollisionDirection::right]) {
+            // std::cout << "80 RIGHT BOTTOM, Bump to the right\n";
             p_xform.pos.x += (overlap.right + margin);
             overlap.right = 0;
-            p_col.collidedThisFrame.set(StaticCollisionDirection::right, true);
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::right, true);
+            w_col.collidedThisFrame[entity->id()] = StaticCollisionDirection::right;
           }
         } else if (std::abs(prevOverlap.left) < std::abs(prevOverlap.right) &&
                    std::abs(prevOverlap.bottom) < std::abs(prevOverlap.top)) {
@@ -139,81 +154,88 @@ void resolve_collision(
           if ((prevOverlap.right <= 0 || prevOverlap.left <= 0) &&
               (prevOverlap.top <= 0 || prevOverlap.bottom <= 0) &&
               w_col.direction[StaticCollisionDirection::left] &&
-              !p_col.collidedThisFrame[StaticCollisionDirection::left]) {
-            std::cout << "139 LEFT BOTTOM, Strict diagonal\n";
+              !p_cont.collidedThisFrame[StaticCollisionDirection::left]) {
+            // std::cout << "139 LEFT BOTTOM, Strict diagonal\n";
             p_xform.pos.x -= (overlap.left + margin);
             overlap.left = 0;
-            p_col.collidedThisFrame.set(StaticCollisionDirection::left, true);
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::left, true);
+            w_col.collidedThisFrame[entity->id()] = StaticCollisionDirection::left;
           }
           if (prevOverlap.left > 0 && prevOverlap.right > 0 &&
               w_col.direction[StaticCollisionDirection::bottom] &&
-              !p_col.collidedThisFrame[StaticCollisionDirection::bottom]) {
-            std::cout << "89 LEFT BOTTOM, Hit the ceiling overlap.bottom: "
-                      << overlap.bottom << "\n";
+              !p_cont.collidedThisFrame[StaticCollisionDirection::bottom]) {
+            // std::cout << "89 LEFT BOTTOM, Hit the ceiling overlap.bottom: "
+                      // << overlap.bottom << "\n";
             p_xform.pos.y += (overlap.bottom + margin);
             overlap.bottom = 0;
-            p_col.collidedThisFrame.set(StaticCollisionDirection::bottom, true);
-            p_col.touchedCeiling = true;
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::bottom, true);
+            p_cont.touchedCeiling = true;
+            w_col.collidedThisFrame[entity->id()] = StaticCollisionDirection::bottom;
           }
           if (prevOverlap.top > 0 && prevOverlap.bottom > 0 &&
               w_col.direction[StaticCollisionDirection::left] &&
-              !p_col.collidedThisFrame[StaticCollisionDirection::left]) {
-            std::cout << "96 LEFT BOTTOM, Bump to the left\n";
+              !p_cont.collidedThisFrame[StaticCollisionDirection::left]) {
+            // std::cout << "96 LEFT BOTTOM, Bump to the left\n";
             p_xform.pos.x -= (overlap.left + margin);
             overlap.left = 0;
-            p_col.collidedThisFrame.set(StaticCollisionDirection::left, true);
+            p_cont.collidedThisFrame.set(StaticCollisionDirection::left, true);
+            w_col.collidedThisFrame[entity->id()] = StaticCollisionDirection::left;
           }
         } else if (std::abs(prevOverlap.right) <= std::abs(prevOverlap.left) &&
                    prevOverlap.top >= 0 && prevOverlap.bottom >= 0 &&
                    w_col.direction[StaticCollisionDirection::right] &&
-                   !p_col.collidedThisFrame[StaticCollisionDirection::right]) {
+                   !p_cont.collidedThisFrame[StaticCollisionDirection::right]) {
           // Player previously to the RIGHT
-          std::cout << "104 STRAIGHT RIGHT, Bump to the right\n";
+          // std::cout << "104 STRAIGHT RIGHT, Bump to the right\n";
           p_xform.pos.x += (overlap.right + margin);
           overlap.right = 0;
-          p_col.collidedThisFrame.set(StaticCollisionDirection::right, true);
+          p_cont.collidedThisFrame.set(StaticCollisionDirection::right, true);
+          w_col.collidedThisFrame[entity->id()] = StaticCollisionDirection::right;
         } else if (std::abs(prevOverlap.left) <= std::abs(prevOverlap.right) &&
                    prevOverlap.top >= 0 && prevOverlap.bottom >= 0 &&
                    w_col.direction[StaticCollisionDirection::left] &&
-                   !p_col.collidedThisFrame[StaticCollisionDirection::left]) {
+                   !p_cont.collidedThisFrame[StaticCollisionDirection::left]) {
           // Player previouisly to the LEFT
-          std::cout << "111 STRAIGHT LEFT, Bump to the left\n";
+          // std::cout << "111 STRAIGHT LEFT, Bump to the left\n";
           p_xform.pos.x -= (overlap.left + margin);
           overlap.left = 0;
-          p_col.collidedThisFrame.set(StaticCollisionDirection::left, true);
+          p_cont.collidedThisFrame.set(StaticCollisionDirection::left, true);
+          w_col.collidedThisFrame[entity->id()] = StaticCollisionDirection::left;
         } else if (std::abs(prevOverlap.top) <= std::abs(prevOverlap.bottom) &&
                    prevOverlap.left >= 0 && prevOverlap.right >= 0 &&
                    w_col.direction[StaticCollisionDirection::top] &&
-                   !p_col.collidedThisFrame[StaticCollisionDirection::top]) {
-          std::cout << "STRAIGHT TOP, Stand\n";
+                   !p_cont.collidedThisFrame[StaticCollisionDirection::top]) {
+          // std::cout << "STRAIGHT TOP, Stand\n";
           p_xform.pos.y -= (overlap.top);
           overlap.top = 0;
-          p_col.collidedThisFrame.set(StaticCollisionDirection::top, true);
-          p_col.touchedGround = true;
+          p_cont.collidedThisFrame.set(StaticCollisionDirection::top, true);
+          p_cont.touchedGround = true;
+          w_col.collidedThisFrame[entity->id()] = StaticCollisionDirection::top;
         } else if (std::abs(prevOverlap.bottom) <= std::abs(prevOverlap.top) &&
                    prevOverlap.left >= 0 && prevOverlap.right >= 0 &&
                    w_col.direction[StaticCollisionDirection::bottom] &&
-                   !p_col.collidedThisFrame[StaticCollisionDirection::bottom]) {
-          std::cout << "STRAIGHT BOTTOM, Hit the ceiling\n";
+                   !p_cont.collidedThisFrame[StaticCollisionDirection::bottom]) {
+          // std::cout << "STRAIGHT BOTTOM, Hit the ceiling\n";
           p_xform.pos.y += (overlap.bottom + margin);
           overlap.bottom = 0;
-          p_col.collidedThisFrame.set(StaticCollisionDirection::bottom, true);
-          p_col.touchedCeiling = true;
+          p_cont.collidedThisFrame.set(StaticCollisionDirection::bottom, true);
+          p_cont.touchedCeiling = true;
+          w_col.collidedThisFrame[entity->id()] = StaticCollisionDirection::bottom;
         }
       }
     }
 
     // if (overlap.bottom < 0 || overlap.top < 0 || overlap.right < 0 ||
     //     overlap.left < 0) {
-    p_col.prevOverlap[id] = overlap;
+    p_cont.prevOverlap[id] = overlap;
     // }
     ++count;
-    if (count >= p_col.maxColliders) {
+    if (count >= p_cont.maxColliders) {
       break;
     }
   }
-  std::cout << "Colliders this frame: " << count << std::endl;
-  p_col.collidedThisFrame.reset();
+  // std::cout << "Colliders this frame: " << count << std::endl;
+  p_cont.collidedThisFrame.reset();
 }
 
 //   // Previously no overlap at all, meaning we're intersecting

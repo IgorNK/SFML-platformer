@@ -7,7 +7,8 @@
 #include <vector>
 
 typedef std::tuple<CTransform, CVelocity, CBoundingBox, CAnimatedSprite, CAnimationState, CInput,
-                   CStaticCollision, CDynamicCollision, CGravity>
+                   CStaticCollision, CCharacterController, CGravity, CHealth, CHitReaction, CDeathReaction,
+                   CLifespan, CWeapon, CBullet>
     Components;
 
 class Entity {

@@ -10,10 +10,15 @@ public:
 
 class CTransform : public Component {
 public:
+  enum Direction {
+    LEFT,
+    RIGHT,
+  };
   Vec2 pos = {0.f, 0.f};
   Vec2 prevPos = {0.f, 0.f};
   Vec2 scale = {1.f, 1.f};
   float angle = 0;
+  Direction direction{Direction::RIGHT};
   CTransform() {}
   CTransform(const Vec2 &in_pos) : pos(in_pos) {}
   ~CTransform() {}
@@ -32,6 +37,18 @@ public:
   bool midJump{false};
   bool canJump{true};
   CVelocity() {}
+  CVelocity(const float x, const float y) 
+    : velocity(Vec2(x, y))
+    , maxXSpeed(std::abs(x))
+    , maxYSpeed(std::max(std::abs(y), maxYSpeed)) {}
+  CVelocity(const float x, const float y, bool kinematic) 
+    : velocity(Vec2(x, y))
+    , maxXSpeed(std::abs(x))
+    , maxYSpeed(std::max(std::abs(y), maxYSpeed)) {
+    if (kinematic) {
+      deceleration = 0.f;
+    }
+  }
   ~CVelocity() {}
 };
 
@@ -56,6 +73,7 @@ class CAnimatedSprite : public Component {
 public:
   AnimatedSprite sprite;
   CAnimatedSprite() {}
+  CAnimatedSprite(const AnimatedSprite & in_sprite) : sprite(in_sprite) {}
   ~CAnimatedSprite() {}
 };
 
@@ -87,9 +105,27 @@ public:
 
 class CStaticCollision : public Component {
 public:
+  enum CollisionLayer {
+    PLAYER,
+    ENEMIES,
+    WORLD,
+  };
+  CollisionLayer layer {CollisionLayer::WORLD};
   EStaticCollisionDirection direction;
+  std::unordered_map<size_t, StaticCollisionDirection> collidedThisFrame;
+  bool processed {false};
   CStaticCollision() {}
   CStaticCollision(const EStaticCollisionDirection dir) : direction(dir) {}
+  CStaticCollision(const EStaticCollisionDirection dir, const CollisionLayer in_layer) : direction(dir), layer(in_layer) {}
+  CStaticCollision(const CollisionLayer in_layer)
+    : layer(in_layer) {
+      EStaticCollisionDirection dir;
+      dir.set(StaticCollisionDirection::top, true);
+      dir.set(StaticCollisionDirection::right, true);
+      dir.set(StaticCollisionDirection::bottom, true);
+      dir.set(StaticCollisionDirection::left, true);
+      direction = dir;
+  }
   ~CStaticCollision() {}
 };
 
@@ -100,16 +136,16 @@ struct Overlap {
   float top;
 };
 
-class CDynamicCollision : public Component {
+class CCharacterController : public Component {
 public:
-  float distance{100};
-  int maxColliders{12};
+  float distance{640000}; // Distance from which to grab collision to process
+  int maxColliders{12}; // Maximum colliders to process
   bool touchedGround{false};
   bool touchedCeiling{false};
   EStaticCollisionDirection collidedThisFrame;
   std::unordered_map<size_t, Overlap> prevOverlap{};
-  CDynamicCollision() {}
-  ~CDynamicCollision() {}
+  CCharacterController() {}
+  ~CCharacterController() {}
 };
 
 class CGravity : public Component {
@@ -118,4 +154,83 @@ public:
   CGravity() {}
   CGravity(const float in_acceleration) : acceleration(in_acceleration) {}
   ~CGravity() {}
+};
+
+class CHealth : public Component {
+public:
+  int hp {10};
+  CHealth() {}
+  CHealth(const int in_hp) : hp(in_hp) {}
+  ~CHealth() {}
+};
+
+class CDeathReaction : public Component {
+public:
+  std::string animation {""};
+  unsigned int speed {10};
+  std::vector<AnimatedSprite> spawn_prefabs {};
+  CDeathReaction() {}
+  CDeathReaction(const std::string & anim_name, const int anim_speed, const std::vector<AnimatedSprite> & prefabs) 
+    : animation(anim_name)
+    , speed(anim_speed)
+    , spawn_prefabs(prefabs) {}
+  ~CDeathReaction() {}
+};
+
+class CHitReaction : public Component {
+public:
+  std::string animation {""};
+  unsigned int speed {10};
+  CHitReaction() {}
+  CHitReaction(const std::string & anim_name, const int anim_speed) 
+    : animation(anim_name)
+    , speed(anim_speed) {}
+  ~CHitReaction() {}
+};
+
+class CLifespan : public Component {
+public:
+  int life {100};
+  int countdown {100};
+  CLifespan() {}
+  CLifespan(const int in_life) : life(in_life), countdown(in_life) {}
+  ~CLifespan() {}
+};
+
+class CWeapon : public Component {
+public:
+  AnimatedSprite bullet;
+  int damage {1};
+  int fireRate {20};
+  int countdown {0};
+  Vec2 velocity {10, 0};
+  int gravity {0};
+  bool kinematic {true};
+  int offset {0};
+  CWeapon() {}
+  CWeapon(
+    const AnimatedSprite & bullet_prefab, 
+    const int in_damage, 
+    const int in_rate, 
+    const Vec2 in_velocity, 
+    const int in_gravity, 
+    const int in_offset, 
+    const bool in_kinematic
+  )
+    : bullet(bullet_prefab)
+    , damage(in_damage)
+    , fireRate(in_rate)
+    , velocity(in_velocity)
+    , gravity(in_gravity)
+    , offset(in_offset)
+    , kinematic(in_kinematic) {}
+  ~CWeapon() {}
+};
+
+class CBullet : public Component {
+public:
+  int damage {1};
+  CBullet() {}
+  CBullet(const int in_damage) : damage(in_damage) {}
+  ~CBullet() {}
 };

@@ -17,6 +17,7 @@ public:
 	~EntityManager() {};
 	const Entities & get_entities() const;
 	const Entities & get_entities(const Tag tag);
+	const std::shared_ptr<Entity> get_entity(const size_t id);
 	const std::shared_ptr<Entity> add_entity(const Tag tag);
 	const std::shared_ptr<Entity> schedule(const Tag tag);
 	const bool pop_schedule();

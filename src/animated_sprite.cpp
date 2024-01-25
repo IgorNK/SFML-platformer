@@ -20,9 +20,14 @@ void AnimatedSprite::update() {
   //           << ":" << m_currentFrames->at(0).height << '\n';
   // std::cout << "Texture info: " << m_sprite.getTexture()->getSize().x << ":"
   //           << m_sprite.getTexture()->getSize().y << std::endl;
-  m_sprite.setTextureRect(m_currentFrames->at(m_currentFrame));
+  const sf::IntRect clipRect = m_currentFrames->at(m_currentFrame);
+  m_sprite.setOrigin({
+    (float)clipRect.width / 2, 
+    (float)clipRect.height / 2
+  });
+  m_sprite.setTextureRect(clipRect);
   // m_sprite.setTextureRect(m_animations[m_currentAnimation][m_currentFrame]);
-  // std::cout << "Current frame: " << m_currentFrame << " / " << m_currentFrames->size() << std::endl;
+  // std::cout << m_currentAnimation << " Current frame: " << m_currentFrame << " / " << m_currentFrames->size() << std::endl;
   ++m_currentFrame;
   if (m_currentFrame >= m_frameCount) {
     if (m_repeat) {
@@ -31,6 +36,10 @@ void AnimatedSprite::update() {
       onEnd();
     }
   }
+}
+
+void AnimatedSprite::setCallback(std::function<void()> in_callback) {
+  onEndCallback = in_callback;
 }
 
 void AnimatedSprite::setPosition(const Vec2 &pos) {
@@ -47,6 +56,8 @@ void AnimatedSprite::setDirection(bool right) {
 
 void AnimatedSprite::onEnd() {
   pause();
+  onEndCallback();
+  onEndCallback = [](){};
   m_hasEnded = true;
 }
 
@@ -64,6 +75,7 @@ bool AnimatedSprite::play(const std::string &anim_name, const int speed = 10) {
     //           << std::endl;
     return false;
   }
+  std::cout << "PLAY " << anim_name << std::endl;
   m_currentFrame = 0;
   m_speed = speed;
   m_currentAnimation = anim_name;
@@ -82,6 +94,7 @@ bool AnimatedSprite::play(const std::string &anim_name, const int speed = 10) {
     (float)clipRect.height
   });
   m_paused = false;
+  m_hasEnded = false;
   return true;
 }
 
@@ -90,6 +103,18 @@ void AnimatedSprite::pause() { m_paused = true; }
 bool AnimatedSprite::hasEnded() { return m_hasEnded; }
 
 void AnimatedSprite::setRepeat(bool repeat) { m_repeat = repeat; }
+
+const std::string & AnimatedSprite::getAnimation() const {
+  return m_currentAnimation;
+}
+
+const unsigned int AnimatedSprite::getSpeed() const {
+  return m_speed;
+}
+
+const Vec2 &AnimatedSprite::getSize() const { return m_size; }
+
+sf::Sprite &AnimatedSprite::getSprite() { return m_sprite; }
 
 bool AnimatedSprite::load_file(const std::string &path, Assets &assets) {
   std::cout << "Loading atlas data: " << path << std::endl;
@@ -220,9 +245,3 @@ void AnimatedSprite::test_data() {
                   }
                 });
 }
-
-const Vec2 &AnimatedSprite::getSize() const { return m_size; }
-
-sf::Sprite &AnimatedSprite::getSprite() { return m_sprite; }
-
-const size_t AnimatedSprite::getSpeed() const { return m_speed; }
